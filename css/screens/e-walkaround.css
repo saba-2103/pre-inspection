@@ -48,26 +48,6 @@
 .v360 .i-pic { height: 100%; aspect-ratio: 1672/941; position: relative; flex-shrink: 0; }
 .v360 .i-pic img { pointer-events: none; position: absolute; left: -14px; top: -3px; width: 291px; height: 201px; max-width: none; }
 
-/* ---------- 360 Context — Do's & Don'ts (346:37267) ---------- */
-.v360 .c-card { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); width: 810px; padding: 12px; border-radius: 20px; background: #fff; display: flex; flex-direction: column; gap: 12px; align-items: center; }
-.v360 .c-cols { display: flex; gap: 16px; height: 228px; width: 100%; align-items: center; }
-.v360 .c-col { flex: 1 0 0; min-width: 1px; height: 100%; display: flex; flex-direction: column; gap: 8px; }
-.v360 .c-head { width: 100%; display: flex; gap: 8px; align-items: center; justify-content: center; padding: 6px 8px; border-radius: 8px; flex-shrink: 0; }
-.v360 .c-head.do { background: #efffef; }
-.v360 .c-head.dont { background: #ffefef; }
-.v360 .c-head img { width: 24px; height: 24px; flex-shrink: 0; }
-.v360 .c-head p { flex: 1 0 0; font: 500 18px/1.2 var(--font-secondary); color: #212529; letter-spacing: -0.02em; }
-.v360 .c-body { flex: 1 0 0; min-height: 1px; width: 100%; display: flex; flex-direction: column; gap: 4px; }
-.v360 .c-row { display: flex; gap: 20px; width: 100%; }
-.v360 .c-row p { flex: 1 0 0; min-width: 1px; text-align: center; color: #212529; letter-spacing: -0.04em; } /* Effra (unavailable) → Inter, tightened */
-.v360 .c-titles p { font: 500 14px/1.2 var(--font-secondary); }
-.v360 .c-caps p { font: 400 12px/1.2 var(--font-secondary); }
-.v360 .c-pics { flex: 1 0 0; min-height: 1px; align-items: stretch; }
-.v360 .c-pic { flex: 1 0 0; min-width: 1px; position: relative; }
-.v360 .c-pic img { pointer-events: none; position: absolute; left: 0; top: 0; width: 178.5px; height: 137px; max-width: none; }
-.v360 .c-sep { width: 0; height: 100%; border-left: 1px solid #e5e5e5; flex-shrink: 0; }
-.v360 .c-btn { width: 300px; }
-
 /* ---------- 360 Captured (2:2113) ---------- */
 .v360-cpd .body { flex: 1 0 0; min-height: 1px; width: 100%; display: flex; gap: 16px; padding: 0 16px; }
 .v360-cpd .ang-list { position: relative; left: auto; top: auto; bottom: auto; height: 100%; flex-shrink: 0; }

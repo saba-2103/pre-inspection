@@ -34,6 +34,13 @@
   C.steps = (labels, current, o = {}) =>
     labels.map((label, i) => ({ label, state: i < current ? 'done' : i === current ? 'current' : 'todo', captured: i === current && !!o.captured }));
 
+  /* Stage stepper labels for the items picked on the Items screen (RC path follows the chosen RC type) */
+  C.has = (k) => !!App.state.items[k];
+  C.stage1 = () => [...(App.state.rcType === 'paper' ? ['RC Paper'] : ['RC (Front)', 'RC (Back)']), 'Odometer',
+    ...(C.has('windshield') ? ['Windshield'] : []), ...(C.has('roof') ? ['Rooftop Glass'] : [])];
+  C.stage2 = () => [...(C.has('vin') ? ['VIN'] : []), ...(C.has('engine') ? ['Engine Sound'] : []), 'Exterior Walkthrough', 'Damages'];
+  C.stageSteps = (stage, label, o) => { const l = stage === 1 ? C.stage1() : C.stage2(); return C.steps(l, l.indexOf(label), o); };
+
   C.ctas = () => `
     <div class="rhs">
       <button class="icon-btn" data-action="vo-replay" aria-label="Replay instructions"><img src="${A('core/restart.svg')}" alt=""></button>
@@ -76,7 +83,7 @@
 
   /* Media element for a capture object or fallback image */
   C.media = (cap, fallback, extra = '') => {
-    if (cap && cap.kind === 'video') return `<video src="${cap.url}" playsinline controls ${extra}></video>`;
+    if (cap && cap.kind === 'video') return `<video src="${cap.url}" playsinline muted controls ${extra}></video>`;
     if (cap) return `<img src="${cap.url}" alt="">`;
     return fallback ? `<img src="${fallback}" alt="">` : '';
   };
@@ -87,7 +94,8 @@
   C.captureScreen = (o) => {
     // default = Figma capture Overlay (2:1608): #212529 @70% with a 660x272 r20 window + 2px white@30% ring
     const c = Object.assign({ left: 94, top: 93, width: 660, height: 272, radius: 20, shade: 'rgba(33,37,41,.7)', ring: true }, o.cutout || {});
-    const cut = `left:${c.left}px;top:${c.top}px;width:${c.width}px;height:${c.height}px;border-radius:${c.radius || 0}px;${c.border ? `border:${c.border};` : ''}${c.shade ? `box-shadow:0 0 0 3000px ${c.shade};` : ''}`;
+    // offsets are from the 850×390 design; anchor them to the centre so the window stays centred on wider/taller phones
+    const cut = `left:calc(50% + ${c.left - 425}px);top:calc(50% + ${c.top - 195}px);width:${c.width}px;height:${c.height}px;border-radius:${c.radius || 0}px;${c.border ? `border:${c.border};` : ''}${c.shade ? `box-shadow:0 0 0 3000px ${c.shade};` : ''}`;
     return `
       <div class="cam-slot"></div>
       <div class="cutout ${c.ring ? 'ring' : ''}" style="${cut}"></div>
@@ -166,7 +174,7 @@
     const cap = App.capture(o.key);
     return `
       ${C.header({ stepper: o.stepper, chrome: false })}
-      <div class="captured-img" ${o.fs ? `data-go="${o.fs}"` : ''}>${C.media(cap, o.fallback, 'muted')}</div>
+      <div class="captured-img" ${o.fs ? `data-go="${o.fs}"` : ''}>${C.media(cap, o.fallback)}</div>
       ${C.footer({ cls: 'captured-footer', buttons: [
         { label: o.retakeLabel || 'Retake', variant: 'outline', go: o.retake },
         { label: o.nextLabel || 'Next', next: o.next, action: o.nextAction },

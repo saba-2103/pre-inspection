@@ -2,8 +2,6 @@
    Figma: "4 / Stage 1 …Windshield (O), Rooftop (O)" and Stage 2 VIN (O), Engine Sound (O), Close Bonnet (O). */
 (function () {
   const { A } = C;
-  const S1 = ['RC (Front)', 'RC (Back)', 'Odometer', 'Windshield', 'Rooftop Glass'];
-  const S2 = ['VIN', 'Engine Sound', 'Exterior Walkthrough', 'Damages'];
   const NO_CUTOUT = { left: 0, top: 0, width: 0, height: 0, shade: '', ring: false };
   const fmt = (s) => { s = Math.max(0, Math.floor(s || 0)); return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`; };
 
@@ -12,7 +10,7 @@
   const videoModal = (title, img) => ({ title, button: 'Capture', bgHtml: `<img class="vm-img" src="${img}" alt=""><div class="vm-grad"></div>` });
 
   const recordScreen = (o, withInstr) => () => C.captureScreen({
-    stepper: o.stepper,
+    stepper: C.stageSteps(o.stage, o.label),
     cutout: NO_CUTOUT,
     zoom: false,
     badge: o.badge,
@@ -95,7 +93,7 @@
     </div>`;
   const player = (key, fallback) => {
     const cap = App.capture(key);
-    return cap && cap.kind === 'video' ? `<video src="${cap.url}" playsinline preload="auto"></video>` : `<img src="${fallback}" alt="">`;
+    return cap && cap.kind === 'video' ? `<video src="${cap.url}" playsinline muted preload="auto"></video>` : `<img src="${fallback}" alt="">`;
   };
 
   function mountPlayer(el, key, big) {
@@ -119,7 +117,8 @@
       if (dur()) v.currentTime = ((e.clientX - r.left) / r.width) * dur();
     });
     paint();
-    v.play().catch(() => { v.muted = true; v.play().catch(() => {}); });
+    v.muted = true; // previews always play without sound
+    v.play().catch(() => {});
     return () => { v.pause(); v.removeAttribute('src'); v.load(); };
   }
 
@@ -153,7 +152,7 @@
     });
     App.screen({
       id: o.p + '-recorded', node: o.nodes.recorded, title: o.titles.recorded, orientation: 'landscape', className: `d-vrec d-${o.p}`, rotate: S,
-      render: recordedScreen({ stepper: C.steps(o.labels, o.step, { captured: true }), key: o.key, bg: o.bg, fs: o.p + '-fs', retake: o.p + '-record', next: o.next, sample: o.sample }),
+      render: () => recordedScreen({ stepper: C.stageSteps(o.stage, o.label, { captured: true }), key: o.key, bg: o.bg, fs: o.p + '-fs', retake: o.p + '-record', next: o.next(), sample: o.sample })(),
       mount: (el) => mountPlayer(el, o.key, false),
     });
     App.screen({
@@ -165,27 +164,27 @@
 
   // Windshield (O): 46:6858 / 136:41496 (+ countdown 140:44022, recording 140:43651) / 140:43295 / 516:32005
   videoItem({
-    p: 'ws', key: 'windshield', rotate: 'rotate-s1', labels: S1, step: 3, stepper: C.steps(S1, 3), next: 'roof-instr',
+    p: 'ws', key: 'windshield', rotate: 'rotate-s1', stage: 1, label: 'Windshield', next: () => App.route.afterWindshield(),
     nodes: { instr: '46:6858', record: '136:41496', recorded: '140:43295', fs: '516:32005' },
     titles: { instr: 'Windshield - Instruction (O)', record: 'Windshield - Record (O)', recorded: 'Windshield - Recorded (O)', fs: 'Windshield - Recorded (O) Preview' },
     vo: { instr: '"Now, record the windshield."', record: '"Tap Record and move slowly from left to right."' },
     badge: 'Fit the Windshield in frame and tap on the shutter', instrTitle: 'Capture Windshield',
-    modalImg: A('d/ws-modal.jpg'), bg: A('d/ws-bg.jpg'), sample: { time: '0:04/0:52', fill: '30px' },
+    modalImg: A('d/ws-pan.jpg'), bg: A('d/ws-bg.jpg'), sample: { time: '0:04/0:52', fill: '30px' },
   });
 
   // Rooftop glass / sunroof (O): 46:7131 / 136:41842 (+ 140:44035, 140:43664) / 140:43305 / 516:32261
   videoItem({
-    p: 'roof', key: 'roof', rotate: 'rotate-s1', labels: S1, step: 4, stepper: C.steps(S1, 4), next: 's2-context',
+    p: 'roof', key: 'roof', rotate: 'rotate-s1', stage: 1, label: 'Rooftop Glass', next: () => 's2-context',
     nodes: { instr: '46:7131', record: '136:41842', recorded: '140:43305', fs: '516:32261' },
     titles: { instr: 'Rooftop Glass - Instruction (O)', record: 'Rooftop Glass - Record (O)', recorded: 'Rooftop Glass - Recorded (O)', fs: 'Rooftop Glass - Recorded (O) Preview' },
     vo: { instr: '"Now, record the sunroof."', record: '"Tap Record and move slowly from front to back."' },
     badge: 'Fit the Rooftop Glass in frame and tap on the shutter', instrTitle: 'Capture Rooftop Glass',
-    modalImg: A('d/roof-modal.jpg'), bg: A('d/roof-bg.jpg'), sample: { time: '0:09/0:21', fill: '50%' },
+    modalImg: A('d/roof-pan.jpg'), bg: A('d/roof-bg.jpg'), sample: { time: '0:09/0:21', fill: '50%' },
   });
 
   // Engine sound (O): 343:34510 / 343:35123 (+ 343:34498, 343:34504) / 343:34487 / 516:32296 — hold ≥ 10 s
   videoItem({
-    p: 'engine', key: 'engine', rotate: 'rotate-s2', labels: S2, step: 1, stepper: C.steps(S2, 1), next: 'bonnet-close', minSec: 10,
+    p: 'engine', key: 'engine', rotate: 'rotate-s2', stage: 2, label: 'Engine Sound', next: () => 'bonnet-close', minSec: 10,
     nodes: { instr: '343:34510', record: '343:35123', recorded: '343:34487', fs: '516:32296' },
     titles: { instr: 'Engine Sound - Instruction (O)', record: 'Engine Sound - Record (O)', recorded: 'Engine Sound - Recorded (O)', fs: 'Engine Sound - Recorded (O) Preview' },
     vo: { instr: '"Now, record the engine sound."', record: '"Keep it inside the frame and tap Record. Hold for atleast 10 seconds"' },
@@ -204,7 +203,7 @@
       </div>
     </div>`;
   const vinCapture = (withInstr) => () => C.captureScreen({
-    stepper: C.steps(S2, 0), cutout: VIN_CUT, zoom: false,
+    stepper: C.stageSteps(2, 'VIN'), cutout: VIN_CUT, zoom: false,
     badge: 'Fit the VIN in frame and tap on the shutter',
     extra: withInstr ? vinModal : '',
   });
@@ -222,7 +221,7 @@
   });
   App.screen({
     id: 'vin-captured', node: '153:45980', title: 'VIN - Captured (O)', orientation: 'landscape', className: 'captured d-vin', rotate: 'rotate-s2',
-    render: () => C.capturedScreen({ stepper: C.steps(S2, 0, { captured: true }), key: 'vin', fs: 'vin-fs', retake: 'vin-capture', next: 'engine-instr', fallback: A('d/vin-sample.jpg') }),
+    render: () => C.capturedScreen({ stepper: C.stageSteps(2, 'VIN', { captured: true }), key: 'vin', fs: 'vin-fs', retake: 'vin-capture', next: App.route.afterVin(), fallback: A('d/vin-sample.jpg') }),
   });
   App.screen({
     id: 'vin-fs', node: '516:32092', title: 'VIN - Captured (O) Preview', orientation: 'landscape', className: 'fs d-vin', rotate: 'rotate-s2',
@@ -235,7 +234,7 @@
     vo: `"Please close the bonnet. Tap 'I'm Ready' once it's closed."`,
     render: () => `
       <div class="header">${C.statusBar()}</div>
-      <img class="bon-bg" src="${A('d/bonnet-bg.jpg')}" alt="">
+      <div class="cam-slot"></div>
       <div class="instr-overlay">
         <div class="instr-modal bon-modal">
           <p class="t">Close the Bonnet</p>
@@ -243,5 +242,9 @@
           <button class="btn btn-primary btn-modal" data-go="v360-instr">I'm Ready</button>
         </div>
       </div>`,
+    mount: (el) => {
+      App.Camera.attach(el.querySelector('.cam-slot'), { fallbackImg: A('d/bonnet-bg.jpg') });
+      return () => App.Camera.video && App.Camera.video.remove();
+    },
   });
 })();

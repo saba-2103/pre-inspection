@@ -18,9 +18,9 @@ Plain static site: no build step, no framework, no package.json. Open `index.htm
 - Navigate with `data-go="id"`; use `data-next="id"` (or `App.go(App.nextAfter(id))`) after a capture so re-captures started from Review return to Review.
 - Design sizes: portrait 390×850 (incl. 90px device chrome), landscape 850×390 (incl. 34px status bar). Status bar, browser bar and home bar are `.device-only` (shown in the desktop phone frame only).
 - Scope every CSS selector under the screen's class. Use exact Figma values.
-- `#/__index` lists all screens; `?optional=0` = mandatory-only flow; `?frame=1` forces the desktop phone frame.
+- Optional captures (windshield, roof, vin, engine) are picked on the `items` screen → `App.state.items`; check with `C.has(key)`, route with `App.route.*` (js/flow.js), steppers via `C.stageSteps(stage, label)`. Engine Sound is the only reason to open/close the bonnet (bonnet-closed assets otherwise).
+- `#/__index` lists all screens; `?optional=0` = all optional items start unticked; `?frame=1` forces the desktop phone frame.
 - Upload is simulated (no backend).
 
 ## Open design copy issues (in Figma, not fixed here)
-- RC Type VO says "Tap 'Start Inspection'" but the button says "Continue".
 - Damages capture badge says "Fit the Odometer Reading…"; Windshield recording badge says "Windshield Reading".

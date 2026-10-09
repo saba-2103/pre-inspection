@@ -3,7 +3,6 @@
 (function () {
   const { A, esc } = C;
   const B = (f) => A('b/' + f);
-  const nextAfterPermissions = () => (App.config.optional ? 's1-bonnet' : 's1-sit');
 
   /* ---------- Permissions (42:4656) + error states (2:1526, 516:31730) ---------- */
   const PERMS = [
@@ -56,7 +55,7 @@
       const res = await App.requestPermissions();
       el.querySelectorAll('[data-perm]').forEach((r) => { r.src = radio(res[r.dataset.perm]); });
       timer = setTimeout(() => {
-        if (res.camera) App.go(nextAfterPermissions());
+        if (res.camera) App.go(App.route.afterPermissions());
         else if (App.current === 'permissions-error') App.rerender();
         else App.go('permissions-error');
       }, 700);
@@ -68,7 +67,11 @@
     id: 'permissions', node: '42:4656', title: 'Permissions', orientation: 'portrait', className: 'b-perm',
     vo: '“Allow access to your Camera, Microphone, and Location to start the recording.”',
     render: () => permissionsHtml({}),
-    mount: mountPermissions,
+    mount: (el) => {
+      // tick what the browser already allows (e.g. camera + mic granted earlier, only location left)
+      App.grantedPermissions().then((g) => el.querySelectorAll('[data-perm]').forEach((r) => { if (g[r.dataset.perm]) r.src = radio(true); }));
+      return mountPermissions(el);
+    },
   });
   // Error = not every permission was granted; rows show the real result. Opened directly → Figma 2:1526 (location missing).
   App.screen({
@@ -108,17 +111,17 @@
   const S1_ITEMS = [
     { name: 'RC', sub: 'Supports both card and paper', img: 'ag-rc.png', tile: true },
     { name: 'Odometer Reading', sub: 'Photo', img: 'ag-odo.png' },
-    { name: 'Windshield', sub: 'Video', img: 'ag-ws.png', opt: true },
-    { name: 'Rooftop Glass', sub: 'Video', img: 'ag-roof.png', opt: true },
+    { name: 'Windshield', sub: 'Video', img: 'ag-ws.png', opt: 'windshield' },
+    { name: 'Rooftop Glass', sub: 'Video', img: 'ag-roof.png', opt: 'roof' },
   ];
   const S2_ITEMS = [
-    { name: 'VIN', sub: 'Photo', img: 'ag-vin.png', opt: true },
-    { name: 'Engine Noise', sub: 'Video', img: 'ag-engine.png', opt: true },
+    { name: 'VIN', sub: 'Photo', img: 'ag-vin.png', opt: 'vin' },
+    { name: 'Engine Noise', sub: 'Video', img: 'ag-engine.png', opt: 'engine' },
     { name: '360° Walkaround', sub: 'Video', img: 'ag-360.png' },
   ];
   const agendaHtml = (stage) => {
     const s2 = stage === 2;
-    const items = (s2 ? S2_ITEMS : S1_ITEMS).filter((i) => App.config.optional || !i.opt);
+    const items = (s2 ? S2_ITEMS : S1_ITEMS).filter((i) => !i.opt || C.has(i.opt));
     return `
       <div class="ag-fade"></div>
       ${C.header({})}
@@ -145,7 +148,7 @@
         <div class="hint"><img src="${B('info.svg')}" alt=""><p>You will complete these items one by one<br>with guided instructions on screen.</p></div>
       </div>
       ${C.footer({ buttons: [s2
-        ? { label: 'Continue Inspection', go: App.config.optional ? 'vin-instr' : 'v360-instr' }
+        ? { label: 'Continue Inspection', go: App.route.stage2() }
         : { label: 'Start Inspection', go: 'rc-type' }] })}`;
   };
 
@@ -187,12 +190,12 @@
     render: () => agendaHtml(1) + sheet('Open the Bonnet', `<div class="bonnet"><img src="${B('bonnet-car.png')}" alt=""></div>`,
       'Tap I\'m Ready when done', 's1-sit', 'hug'),
   });
-  // Optional flow (bonnet already open) → 46:6097; mandatory-only flow (no bonnet step) → 476:42740.
+  // Bonnet opened for Engine Sound → 46:6097; no bonnet step → 476:42740 (bonnet-closed car).
   App.screen({
     id: 's1-sit', node: '46:6097', title: 'Instruction - Sit & Roll Up Windows', orientation: 'portrait', className: 'b-ag b-instr',
     vo: '"Please sit in the driver\'s seat. Close all the windows."',
     render: (ctx) => {
-      const o = ctx.config.optional;
+      const o = C.has('engine');
       return agendaHtml(1) + sheet('Get Settled Inside', steps([
         ['Sit on the ', 'Driver’s Seat', o ? 'sit-seat.png' : 'sit-seat-closed.png'],
         [o ? 'Close All the ' : 'Roll Up All the ', 'Windows', o ? 'sit-windows.png' : 'sit-windows-closed.png'],
@@ -216,7 +219,7 @@
       <div class="b-ov">
         <div class="ctx-modal">
           <p class="st">Move out of the car</p>
-          <div class="cb"><img src="${B('ctx-car.png')}" alt=""></div>
+          <div class="cb"><img src="${B(C.has('engine') ? 'ctx-car.png' : 'sit-seat-closed.png')}" alt=""></div>
           <div class="cta"><p>Click done when you are ready!</p><button class="btn btn-primary btn-modal" data-go="s2-agenda">Done</button></div>
         </div>
       </div>`,

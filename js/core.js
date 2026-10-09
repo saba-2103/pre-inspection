@@ -18,6 +18,8 @@
       permissions: {},
       location: null,
       description: '',
+      // optional capture flows picked on the Items screen (?optional=0 starts with all off)
+      items: Object.fromEntries(['windshield', 'roof', 'vin', 'engine'].map((k) => [k, params.get('optional') !== '0'])),
     },
   });
 
@@ -94,7 +96,7 @@
 
     const ctx = ctxFor(shown);
     const el = document.createElement('div');
-    el.className = 'screen ' + (shown.className || '');
+    el.className = 'screen ' + (shown.scroll ? 'scroll ' : '') + (shown.className || '');
     el.dataset.screen = shown.id;
     el.dataset.o = shown.orientation;
     el.innerHTML = shown.render(ctx);
@@ -109,7 +111,7 @@
 
   function layout(def, framed) {
     const land = def.orientation === 'landscape';
-    const W = land ? 850 : 390;
+    let W = land ? 850 : 390;
     const H = land ? 390 : 850;
     let scale, h, left = 0, top = 0;
     if (params.get('shot')) {
@@ -119,14 +121,16 @@
       h = H;
       left = (innerWidth - W * scale) / 2;
       top = (innerHeight - H * scale) / 2;
+    } else if (land) {
+      // landscape phones: fit the 850×356 content area (390 minus status bar), then grow the stage to fill the
+      // whole screen edge to edge; the 34px status-bar slot stays in layout (so Figma offsets hold) but off-screen
+      scale = Math.min(innerWidth / W, innerHeight / 356);
+      W = innerWidth / scale;
+      h = innerHeight / scale + 34;
+      top = -34 * scale;
     } else {
       scale = innerWidth / W;
-      // landscape phones: never let the 356px content area (390 minus status bar) get cut — letterbox instead
-      if (land) scale = Math.min(scale, innerHeight / 356);
       h = innerHeight / scale;
-      left = (innerWidth - W * scale) / 2;
-      // landscape phones: keep the 34px status-bar slot in layout (so absolute Figma offsets hold) but push it off-screen
-      if (land) { h += 34; top = -34 * scale; }
     }
     stage.style.width = W + 'px';
     stage.style.height = h + 'px';
@@ -157,9 +161,44 @@
 
   App.start = function (startId) {
     App.startId = startId;
-    if (!location.hash) location.replace('#/' + startId);
+    // every load/refresh restarts the flow (the #/__index review helper is kept)
+    if (currentId() !== '__index') history.replaceState(null, '', '#/' + startId);
     render();
   };
+
+  /* ---------- pull to refresh (touch) ---------- */
+  const ptr = document.createElement('div');
+  ptr.className = 'ptr';
+  ptr.innerHTML = '<svg viewBox="0 0 24 24" width="22" height="22"><path d="M20 12a8 8 0 1 1-2.34-5.66M20 4v4.5h-4.5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+  document.body.appendChild(ptr);
+  const PTR_MAX = 120, PTR_TRIGGER = 80;
+  let ptrY0 = null, ptrDy = 0;
+  function atTop(node) {
+    for (; node && node !== document.body; node = node.parentElement) if (node.scrollTop > 0) return false;
+    return true;
+  }
+  function ptrSet(dy, animate) {
+    ptr.style.transition = animate ? 'transform .2s, opacity .2s' : 'none';
+    ptr.style.opacity = Math.min(dy / PTR_TRIGGER, 1);
+    ptr.style.transform = `translate(-50%, ${dy - 48}px) rotate(${dy * 3}deg)`;
+    ptr.classList.toggle('ready', dy >= PTR_TRIGGER);
+  }
+  addEventListener('touchstart', (e) => {
+    ptrY0 = e.touches.length === 1 && atTop(e.target) ? e.touches[0].clientY : null;
+    ptrDy = 0;
+  }, { passive: true });
+  addEventListener('touchmove', (e) => {
+    if (ptrY0 === null) return;
+    if (e.touches.length > 1) { ptrY0 = null; ptrSet(0, true); return; }
+    ptrDy = Math.min(Math.max(e.touches[0].clientY - ptrY0, 0) * 0.5, PTR_MAX);
+    ptrSet(ptrDy);
+  }, { passive: true });
+  addEventListener('touchend', () => {
+    if (ptrY0 === null) return;
+    ptrY0 = null;
+    if (ptrDy >= PTR_TRIGGER) { ptr.classList.add('spin'); location.reload(); }
+    else ptrSet(0, true);
+  });
   App.rerender = () => { lastShown = null; render(); };
 
   /* ---------- helpers ---------- */
@@ -193,11 +232,51 @@
         this.setProgress(Math.min(0.97, (performance.now() - t0) / est));
         this._raf = requestAnimationFrame(tick);
       };
-      u.onstart = () => { cancelAnimationFrame(this._raf); tick(); };
+      const cues = this.cues(this.text);
+      let exact = false;
+      u.onstart = () => {
+        cancelAnimationFrame(this._raf); tick();
+        // fallback for voices without word boundaries: estimate when each cue word is reached
+        this._cueT = cues.map((c) => setTimeout(() => !exact && this.cue(c), (est * c.at) / this.text.length));
+      };
+      u.onboundary = (e) => {
+        if (e.name && e.name !== 'word') return;
+        exact = true;
+        cues.forEach((c) => { if (!c.done && e.charIndex >= c.at) this.cue(c); });
+      };
       u.onend = u.onerror = () => { cancelAnimationFrame(this._raf); this.setProgress(1); };
       setTimeout(() => speechSynthesis.speak(u), 120);
     },
+    /* CTA cues: "tap Capture" / "Tap 'I'm Ready'" → highlight the visible button with that label as the word is spoken */
+    cues(text) {
+      const norm = (s) => s.replace(/[’‘]/g, "'").replace(/^'|'$/g, '').replace(/\s+/g, ' ').trim().toLowerCase();
+      const btns = [...document.querySelectorAll('#stage button, #stage [data-go], #stage [data-next]')].filter((b) => {
+        const r = b.getBoundingClientRect();
+        if (!r.width || !r.height || b.disabled) return false;
+        const hit = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
+        return hit && (b === hit || b.contains(hit)); // not hidden under a modal
+      });
+      const out = [];
+      for (const m of text.matchAll(/\b[Tt]ap\s+['‘’]?([A-Z][\w'’-]*(?:\s+[A-Z][\w'’-]*)*)/g)) {
+        const want = norm(m[1]);
+        const el = btns.find((b) => {
+          const l = norm(b.getAttribute('aria-label') || b.textContent);
+          return l && (l === want || l.startsWith(want + ' ') || want.startsWith(l + ' '));
+        });
+        if (el) out.push({ el, at: m.index + m[0].length - m[1].length });
+      }
+      return out;
+    },
+    cue(c) {
+      c.done = true;
+      c.el.classList.remove('vo-cue');
+      void c.el.offsetWidth; // restart the animation
+      c.el.classList.add('vo-cue');
+      setTimeout(() => c.el.classList.remove('vo-cue'), 2400);
+    },
     stop() {
+      (this._cueT || []).forEach(clearTimeout);
+      document.querySelectorAll('.vo-cue').forEach((n) => n.classList.remove('vo-cue'));
       cancelAnimationFrame(this._raf);
       if (window.speechSynthesis) speechSynthesis.cancel();
       this.setProgress(0);
@@ -384,6 +463,15 @@
   });
 
   /* ---------- Permissions ---------- */
+  // Already-granted permissions, without prompting (Permissions API; unsupported names count as not granted)
+  App.grantedPermissions = async function () {
+    const names = { camera: 'camera', microphone: 'microphone', location: 'geolocation' };
+    const out = {};
+    await Promise.all(Object.entries(names).map(async ([k, name]) => {
+      try { out[k] = (await navigator.permissions.query({ name })).state === 'granted'; } catch (e) { out[k] = false; }
+    }));
+    return out;
+  };
   App.requestPermissions = async function () {
     const res = { camera: false, microphone: false, location: false };
     try { await Camera.start(); res.camera = true; res.microphone = Camera.hasAudio(); } catch (e) {}

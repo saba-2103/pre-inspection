@@ -56,7 +56,8 @@
     const dmg = real ? App.state.damages : SAMPLE.damages;
     if (!real && !frozen) initSample();
     const items = [];
-    LEAVES.forEach(([key, label, sec]) => caps[key] && items.push({ key, label, sec, cap: caps[key] }));
+    // sample data follows the Items screen too (optional items switched off are not listed)
+    LEAVES.forEach(([key, label, sec]) => caps[key] && (real || !(key in App.state.items) || C.has(key)) && items.push({ key, label, sec, cap: caps[key] }));
     V360.forEach((label, i) => { const key = 'v360_' + (i + 1); if (caps[key]) items.push({ key, label, sec: 'exterior', group: 'v360', cap: caps[key] }); });
     dmg.forEach((cap, i) => items.push({ key: 'dmg_' + i, label: 'Damage ' + (i + 1), sec: 'exterior', group: 'damages', cap }));
     const m = { items, sample: !real, frozen };
@@ -426,7 +427,7 @@
           const act = a.dataset.action;
           if (act === 'pv-close') { if (Sim.fromReview) { Sim.fromReview = false; history.back(); } else App.go('review', true); }
           else if (act === 'pv-retake') { Sim.fromReview = false; recapture(it.key); }
-          else if (act === 'pv-play' && v) { v.muted = false; v.paused ? v.play() : v.pause(); }
+          else if (act === 'pv-play' && v) { v.paused ? v.play() : v.pause(); }
           else if (act === 'pv-fs' && v) { (v.requestFullscreen || v.webkitEnterFullscreen || (() => {})).call(v); }
         });
         return () => { Sim.subs.delete(sub); if (v) v.pause(); };
@@ -452,6 +453,7 @@
           <label class="ta">
             <textarea placeholder="Describe the accident in a few words..." maxlength="1000">${esc(ctx.state.description || '')}</textarea>
             <img class="resize" src="${F('resizable.svg')}" alt="">
+            ${SpeechRec ? `<button type="button" class="mic" aria-label="Speak"><svg viewBox="0 0 24 24" width="16" height="16"><path fill="currentColor" d="M12 14a3 3 0 0 0 3-3V5a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3Zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.92V21h2v-3.08A7 7 0 0 0 19 11h-2Z"/></svg><span>Speak</span></button>` : ''}
           </label>
           <button class="btn submit ${String(ctx.state.description || '').trim() ? '' : 'off'}" data-action="submit">Submit Inspection</button>
         </div>
@@ -463,8 +465,37 @@
         btn.classList.toggle('off', !ta.value.trim());
       });
       btn.addEventListener('click', () => { if (ta.value.trim()) App.go('loading-final'); else ta.focus(); });
+      return mountDictation(el, ta);
     },
   });
+
+  /* Speak → text: live dictation appended to whatever is already typed; the text stays editable afterwards */
+  const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+  function mountDictation(el, ta) {
+    const mic = el.querySelector('.mic');
+    if (!mic) return null;
+    const label = mic.querySelector('span');
+    let rec = null;
+    const set = (on) => { mic.classList.toggle('on', on); label.textContent = on ? 'Listening… tap to stop' : 'Speak'; };
+    mic.addEventListener('click', (e) => {
+      e.preventDefault();
+      if (rec) { rec.stop(); return; }
+      App.VO.stop(); // keep the voice-over out of the mic
+      const base = ta.value.trim() ? ta.value.replace(/\s*$/, ' ') : '';
+      rec = new SpeechRec();
+      rec.lang = 'en-IN'; rec.interimResults = true; rec.continuous = true;
+      rec.onresult = (ev) => {
+        let said = '';
+        for (let i = 0; i < ev.results.length; i++) said += ev.results[i][0].transcript;
+        ta.value = (base + said.trim()).slice(0, ta.maxLength);
+        ta.scrollTop = ta.scrollHeight;
+        ta.dispatchEvent(new Event('input'));
+      };
+      rec.onend = rec.onerror = () => { rec = null; set(false); };
+      try { rec.start(); set(true); } catch (err) { rec = null; }
+    });
+    return () => rec && rec.abort();
+  }
 
   /* ---------- Success (2:3323) ---------- */
   App.screen({

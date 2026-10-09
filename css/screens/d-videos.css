@@ -18,9 +18,24 @@
 
 /* Video Modals (343:35019) */
 .d-vid .instr-modal { padding: 16px; }
-.d-ws .instr-modal, .d-roof .instr-modal { top: 80.25px; bottom: auto; }
 .d-vid .instr-modal .vm-img { position: absolute; left: 0; top: 0; width: 480px; height: 276px; object-fit: cover; }
 .d-engine .instr-modal .vm-img { height: 292px; }
+/* Windshield: prototype pans the 939×528 image left→right and back (Video Modals 343:35017 ⇄ 343:35016:
+   1s delay, 3s ease-out smart animate each way, looping) */
+.d-ws .instr-modal .vm-img { top: -76px; width: 939px; height: 528px; animation: d-ws-pan 8s infinite; }
+@keyframes d-ws-pan {
+  0%, 12.5% { transform: translateX(0); animation-timing-function: ease-out; }
+  50%, 62.5% { transform: translateX(-459px); animation-timing-function: ease-out; }
+  100% { transform: translateX(0); }
+}
+/* Rooftop: same loop (346:36186 ⇄ 346:36191), 735.6×414 image panning 256px */
+.d-roof .instr-modal .vm-img { width: 735.609px; height: 414px; animation: d-roof-pan 8s infinite; }
+@keyframes d-roof-pan {
+  0%, 12.5% { transform: translateX(0); animation-timing-function: ease-out; }
+  50%, 62.5% { transform: translateX(-256px); animation-timing-function: ease-out; }
+  100% { transform: translateX(0); }
+}
+html.shot .d-ws .instr-modal .vm-img, html.shot .d-roof .instr-modal .vm-img { animation: none; }
 .d-vid .instr-modal .vm-grad {
   position: absolute; left: 0; top: 0; width: 480px; height: 292px;
   background: linear-gradient(180deg, rgba(255,255,255,.02) 0%, rgba(255,255,255,0) 25%, rgba(255,255,255,0) 75%, rgba(255,255,255,.02) 100%);
@@ -59,7 +74,6 @@
 
 /* ---------- Close Bonnet (346:37498) ---------- */
 .d-bonnet { background: #000; }
-.d-bonnet .bon-bg { position: absolute; left: 0; top: var(--status-h); width: 100%; height: calc(100% - var(--status-h)); object-fit: cover; }
 .d-bonnet .bon-modal { top: 32px; bottom: auto; border: 0; padding: 16px; gap: 20px; justify-content: center; }
 .d-bonnet .bon-modal .t { font: 600 24px/1.2 var(--font-primary); color: var(--heading); text-align: center; width: 100%; }
 .d-bonnet .vm-pic { flex: 1 0 0; min-height: 1px; width: 100%; display: flex; align-items: center; justify-content: center; }

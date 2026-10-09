@@ -1,5 +1,5 @@
 /* Group E — Stage 2: 360° walkaround (10 angles) + damages.
-   Figma: 360-Instruction 346:38068, 360-Context 346:36915, S1..S10 Capture/Captured/Captured-FS, Damages 155:67019/66860/66654/67135. */
+   Figma: 360-Instruction 346:38068, S1..S10 Capture/Captured/Captured-FS, Damages 155:67019/66860/66654/67135. */
 (function () {
   const { A, esc } = C;
   const N = 10;
@@ -22,6 +22,10 @@
   const SCROLL = [0, 0, 94, 188, 282, 376, 470, 564, 678, 660]; // Angles List scroll offset per step (Figma)
   const key = (n) => 'v360_' + n;
   const photo = (n) => A('e/photo-' + n + '.jpg');
+  // Where step n lives: its preview once captured, otherwise its capture screen (after step 10 → damages)
+  const stepGo = (n) => (n > N ? 'damages-instr' : App.capture(key(n)) ? `v360-${n}-captured` : `v360-${n}-capture`);
+  // After the shutter: skip the preview and move straight on (honours returnTo from Review)
+  const afterShot = (n) => () => App.go(App.nextAfter(stepGo(n + 1)));
   const thumbOf = (n) => { const c = App.capture(key(n)); return c && c.kind === 'photo' ? c.url : photo(n); };
 
   /* Angles list (left rail). cur = 1-based current step; mode 'capture' | 'captured' */
@@ -51,7 +55,7 @@
         <img class="minimap" src="${A('e/minimap-' + n + '.png')}" alt="">${recBadge(alt ? 'alt' : '')}`,
       extra: o.extra || '',
     });
-    html = withBack(html, n === 1 ? 'v360-context' : `v360-${n - 1}-captured`);
+    html = withBack(html, n === 1 ? 'v360-instr' : stepGo(n - 1));
     if (n === 1) html = html.replace('<p class="shutter-label">Capture</p>', '<p class="shutter-label">Capture<br>Front</p>');
     return html;
   };
@@ -66,31 +70,7 @@
       <div class="v360-ov"><div class="i-modal">
         <p class="i-title">Record 360° Walkaround</p>
         <div class="i-img"><div class="i-pic"><img src="${A('e/instr-360.png')}" alt=""></div></div>
-        <button class="btn btn-primary btn-modal" data-go="v360-context">Continue</button>
-      </div></div>` }),
-    mount: (el) => { scrollAngles(el); return C.mountCapture(el, { customShutter: true, fallbackImg: photo(1) }); },
-  });
-
-  /* ---------- 360 Context — Do's & Don'ts (346:36915) ---------- */
-  const tip = (img, title, cap) => ({ img, title, cap });
-  const DOS = [tip(1, 'Move around the car smoothly', 'Keep the vehicle within frame from all angles'), tip(2, 'Move closer to capture damages', 'Pause, capture the damage, then return to the same position')];
-  const DONTS = [tip(3, 'Don’t continue from<br>close-up view', 'Step back to your original path before continuing'), tip(4, 'Don’t rejoin the walkaround path diagonally', 'Return to the walkaround path<br>in the same line')];
-  const ctxCol = (cls, icon, head, tips) => `
-    <div class="c-col">
-      <div class="c-head ${cls}"><img src="${A('e/' + icon + '.svg')}" alt=""><p>${head}</p></div>
-      <div class="c-body">
-        <div class="c-row c-titles">${tips.map((t) => `<p>${t.title}</p>`).join('')}</div>
-        <div class="c-row c-pics">${tips.map((t) => `<div class="c-pic"><img src="${A('e/ctx-' + t.img + '.png')}" alt=""></div>`).join('')}</div>
-        <div class="c-row c-caps">${tips.map((t) => `<p>${t.cap}</p>`).join('')}</div>
-      </div>
-    </div>`;
-  App.screen({
-    id: 'v360-context', node: '346:36915', title: '360° - Context', orientation: 'landscape', className: 'capture v360 v360-ctx', rotate: 'rotate-s2',
-    vo: '"Start at the front and walk slowly around it."',
-    render: () => capHtml(1, { extra: `
-      <div class="v360-ov"><div class="c-card">
-        <div class="c-cols">${ctxCol('do', 'radio', 'Do’s', DOS)}<div class="c-sep"></div>${ctxCol('dont', 'close', 'Don’ts', DONTS)}</div>
-        <button class="btn btn-primary btn-modal c-btn" data-go="v360-1-capture">Capture</button>
+        <button class="btn btn-primary btn-modal" data-go="v360-1-capture">Continue</button>
       </div></div>` }),
     mount: (el) => { scrollAngles(el); return C.mountCapture(el, { customShutter: true, fallbackImg: photo(1) }); },
   });
@@ -98,12 +78,11 @@
   /* ---------- 10 steps × capture / captured / fullscreen ---------- */
   STEPS.forEach(([name, capNode, cpdNode, fsNode, , vo], i) => {
     const n = i + 1;
-    const next = n < N ? `v360-${n + 1}-capture` : 'damages-instr';
     App.screen({
       id: `v360-${n}-capture`, node: capNode, title: `360° - Step ${n} - ${name} Capture`, orientation: 'landscape', className: 'capture v360 v360-cap', rotate: 'rotate-s2',
       vo,
       render: () => capHtml(n),
-      mount: (el) => { scrollAngles(el); return C.mountCapture(el, { key: key(n), next: `v360-${n}-captured`, fallbackImg: photo(n) }); },
+      mount: (el) => { scrollAngles(el); return C.mountCapture(el, { key: key(n), next: afterShot(n), fallbackImg: photo(n) }); },
     });
     App.screen({
       id: `v360-${n}-captured`, node: cpdNode, title: `360° - Step ${n} - ${name} Captured`, orientation: 'landscape', className: 'captured v360 v360-cpd', rotate: 'rotate-s2',
@@ -111,11 +90,11 @@
         ${C.header({ stepper: C.steps(NUMS, n - 1, { captured: true }), chrome: false })}
         <div class="body">
           ${angles(n)}
-          <div class="content"><div class="pic" data-go="v360-${n}-fs">${C.media(App.capture(key(n)), photo(n), 'muted')}</div>${C.homeIndicator()}</div>
+          <div class="content"><div class="pic" data-go="v360-${n}-fs">${C.media(App.capture(key(n)), photo(n))}</div>${C.homeIndicator()}</div>
           <div class="ctas">
-            ${C.button({ label: 'Previous', variant: 'grey', go: n > 1 ? `v360-${n - 1}-captured` : null, disabled: n === 1 })}
+            ${C.button({ label: 'Previous', variant: 'grey', go: n > 1 ? stepGo(n - 1) : null, disabled: n === 1 })}
             ${C.button({ label: 'Retake', variant: 'outline', go: `v360-${n}-capture` })}
-            ${C.button({ label: 'Next', next })}
+            ${C.button({ label: 'Next', next: stepGo(n + 1) })}
           </div>
         </div>`,
       mount: (el) => { scrollAngles(el); },
@@ -131,17 +110,16 @@
     id: 'v360-2-capture-alt', node: '581:20934', title: '360° - Step 2 - Front Right Capture (full-height variant)', orientation: 'landscape', className: 'capture v360 v360-cap v360-alt', rotate: 'rotate-s2',
     vo: STEPS[1][5],
     render: () => capHtml(2, { alt: true, badge: 'Fit the Front Right to the screen and tap on the shutter' }),
-    mount: (el) => { scrollAngles(el); return C.mountCapture(el, { key: key(2), next: 'v360-2-captured', fallbackImg: photo(2) }); },
+    mount: (el) => { scrollAngles(el); return C.mountCapture(el, { key: key(2), next: afterShot(2), fallbackImg: photo(2) }); },
   });
 
   /* ---------- Damages ---------- */
-  const S2 = () => (App.config.optional ? ['VIN', 'Engine Sound', 'Exterior Walkthrough', 'Damages'] : ['Exterior Walkthrough', 'Damages']);
   const dmgHtml = (o = {}) => {
     const d = App.state.damages;
     const last = d[d.length - 1];
     const thumb = last ? `<img src="${last.url}" alt="">` : o.sample ? `<img src="${A('e/dmg-sample.jpg')}" alt="">` : '';
     return C.captureScreen({
-      stepper: C.steps(S2(), S2().length - 1),
+      stepper: C.stageSteps(2, 'Damages'),
       cutout: { left: 20, top: 94, width: 702, height: 274, radius: 20 },
       badge: 'Fit the Damages in frame and tap on the shutter',
       zoom: false,

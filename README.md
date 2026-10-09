@@ -13,7 +13,8 @@ On a laptop, open the same link to see the flow inside a phone frame (the webcam
 
 ## Useful links
 - `#/__index` lists every screen and state, for jumping straight to one during design review.
-- `?optional=0` runs the mandatory-only flow (skips bonnet, windshield, rooftop, VIN, engine sound).
+- The Inspection Items screen (after WhatsApp) picks which optional captures run (windshield, rooftop, VIN, engine sound); the bonnet is only opened for engine sound.
+- `?optional=0` starts with every optional item unticked.
 - `#/review?state=failed` (or `uploading`, `recapture`, `reuploading`, `uploaded`) freezes Review in a state.
 - Upload is simulated (no backend). Switch on airplane mode during upload to see the real failure path.
 - Photos that are too dark or blurry are flagged for retake/recapture by an on-device check.

@@ -2,8 +2,6 @@
    Figma header "4 / Stage 1 - Capture RC (Front & Back), Odometer, Windshield (O), Rooftop (O)". */
 (function () {
   const { A, esc } = C;
-  const CARD = ['RC (Front)', 'RC (Back)', 'Odometer', 'Windshield', 'Rooftop Glass'];
-  const PAPER = ['RC Paper', 'Odometer', 'Windshield', 'Rooftop Glass'];
   const CUT_CARD = { left: 185, top: 82, width: 480, height: 284 }; // Overlay 2:2179 / 2:2230
   const CUT_PAPER = { left: 95, top: 94, width: 660, height: 272 }; // Overlay 136:40791
   const BADGE_RC = 'Fit the RC in frame and tap on the shutter';
@@ -29,7 +27,7 @@
         : [{ label: 'Retake', variant: 'outline', go: o.retake, cls: 'c-retake-only' }];
     return `
       ${C.header({ stepper: o.stepper, chrome: false })}
-      <div class="captured-img" style="aspect-ratio:${ar}" ${o.fs ? `data-go="${o.fs}"` : ''}>${C.media(cap, o.fallback, 'muted')}</div>
+      <div class="captured-img" style="aspect-ratio:${ar}" ${o.fs ? `data-go="${o.fs}"` : ''}>${C.media(cap, o.fallback)}</div>
       ${C.footer({
         cls: 'captured-footer',
         before: bad ? `<div class="c-info-line"><img src="${A('c/danger.svg')}" alt=""><p>${esc(msg)}</p></div>` : '',
@@ -73,13 +71,16 @@
         <img class="c-type-img" src="${img.src}" alt="" style="left:${img.l}px;width:${img.w}px">
       </button>`;
   };
+  const typeCards = (sel) =>
+    typeCard('paper', 'RC Paper', sel, { src: A('c/type-paper.png'), l: 0, w: 214 }) +
+    typeCard('card', 'RC Card', sel, { src: A('c/type-card.png'), l: 9.85, w: 194.31 });
   App.screen({
     id: 'rc-type', node: '42:5183', title: 'RC Type', orientation: 'landscape', className: 'capture c-rc c-type', rotate: 'rotate-s1',
-    vo: '“Next, we\'ll capture following items, one by one. Tap \'Start Inspection\' to begin."',
+    vo: '“Do you have a RC paper or RC card?"',
     render: () => {
       const sel = App.state.rcType;
       return C.captureScreen({
-        stepper: C.steps(CARD, 0),
+        stepper: C.stageSteps(1, 'RC (Front)'),
         cutout: CUT_CARD,
         badge: BADGE_RC,
         zoom: false,
@@ -87,10 +88,7 @@
           <div class="instr-overlay">
             <div class="instr-modal c-sheet">
               <p class="title">Select your type of RC</p>
-              <div class="c-types">
-                ${typeCard('paper', 'RC Paper', sel, { src: A('c/type-paper.png'), l: 0, w: 214 })}
-                ${typeCard('card', 'RC Card', sel, { src: A('c/type-card.png'), l: 9.85, w: 194.31 })}
-              </div>
+              <div class="c-types">${typeCards(sel)}</div>
               <button class="btn btn-modal ${sel ? 'btn-primary' : 'c-disabled'}" data-action="rc-continue">Continue</button>
             </div>
           </div>`,
@@ -100,7 +98,13 @@
       const cleanup = C.mountCapture(el, { customShutter: true });
       el.addEventListener('click', (e) => {
         const card = e.target.closest('[data-rc]');
-        if (card) { App.state.rcType = card.dataset.rc; App.rerender(); return; }
+        if (card) {
+          // update in place (no rerender) so the VO doesn't replay
+          App.state.rcType = card.dataset.rc;
+          el.querySelector('.c-types').innerHTML = typeCards(App.state.rcType);
+          el.querySelector('[data-action="rc-continue"]').classList.replace('c-disabled', 'btn-primary');
+          return;
+        }
         if (e.target.closest('[data-action="rc-continue"]') && App.state.rcType) App.go(isPaper() ? 'rc-paper-instr' : 'rc-front-instr');
       });
       return cleanup;
@@ -148,7 +152,7 @@
     p: 'rc-paper', key: 'rcPaper', nodes: ['136:40977', '136:41342', '136:40599', '513:21883'],
     titles: ['RC (Paper) - Instruction', 'RC (Paper) - Capture', 'RC (Paper) - Captured', 'RC (Paper) - Captured Preview'],
     vo: ['"Now, capture your RC paper."', '"Keep it flat, inside the frame, and tap Capture."'],
-    stepper: (captured) => C.steps(PAPER, 0, { captured }),
+    stepper: (captured) => C.stageSteps(1, 'RC Paper', { captured }),
     cut: CUT_PAPER,
     instrTitle: 'Capture RC Paper',
     instrImg: { src: A('c/paper-instr.png'), l: 86.36, t: -6, w: 267.28, h: 229 },
@@ -160,7 +164,7 @@
     p: 'rc-front', key: 'rcFront', nodes: ['136:40877', '136:39356', '2:1642', '516:31918'],
     titles: ['RC (Card - Front) - Instruction', 'RC (Card - Front) - Capture', 'RC (Card - Front) - Captured', 'RC (Card - Front) - Captured Preview'],
     vo: ['"Now, capture the front of your RC card."', '"Keep it inside the frame and tap Capture."'],
-    stepper: (captured) => C.steps(CARD, 0, { captured }),
+    stepper: (captured) => C.stageSteps(1, 'RC (Front)', { captured }),
     cut: CUT_CARD,
     instrTitle: 'Capture RC Card (Front)',
     instrImg: { src: A('c/front-instr.png'), l: 81.31, t: -6, w: 277.38, h: 229 },
@@ -172,7 +176,7 @@
     p: 'rc-back', key: 'rcBack', nodes: ['42:5232', '136:39934', '2:1660', '516:31947'],
     titles: ['RC (Card - Back) - Instruction', 'RC (Card - Back) - Capture', 'RC (Card - Back) - Captured', 'RC (Card - Back) - Captured Preview'],
     vo: ['"Now, capture the back of your RC card."', '"Keep it inside the frame and tap Capture."'],
-    stepper: (captured) => C.steps(CARD, 1, { captured }),
+    stepper: (captured) => C.stageSteps(1, 'RC (Back)', { captured }),
     cut: CUT_CARD,
     instrTitle: 'Capture RC Card (Back)',
     instrImg: { src: A('c/back-instr.png'), l: 81.31, t: -6, w: 277.38, h: 229 },
@@ -182,7 +186,7 @@
 
   /* ---------- Odometer ---------- */
   // stepper follows the chosen RC path (Figma frames show the card path)
-  const odoSteps = (captured) => (isPaper() ? C.steps(PAPER, 1, { captured }) : C.steps(CARD, 2, { captured }));
+  const odoSteps = (captured) => C.stageSteps(1, 'Odometer', { captured });
   // Odometer — Instruction (42:5163) = capture screen + instruction modal
   // Odometer — Capture (132:37989)
   const odoCapture = (withInstr) => () => C.captureScreen({
@@ -190,11 +194,11 @@
     badge: 'Fit the Odometer Reading in frame and tap on the shutter',
     instruction: withInstr ? { title: 'Capture Odometer', image: A('c/odo-instr-bg.png'), button: 'Capture' } : null,
   });
-  const odoNext = () => (App.config.optional ? 'ws-instr' : 's2-context');
+  const odoNext = () => App.route.afterOdometer();
 
   App.screen({
     id: 'odo-instr', node: '42:5163', title: 'Odometer - Instruction', orientation: 'landscape', className: 'capture c-odo', rotate: 'rotate-s1',
-    vo: '"Now, capture the km reading."',
+    vo: '"Now, capture the odometer reading."',
     render: odoCapture(true),
     mount: (el) => C.mountCapture(el, { key: 'odometer', next: 'odo-captured', onDismiss: () => App.go('odo-capture', true) }),
   });

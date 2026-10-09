@@ -57,7 +57,7 @@
               </div>
               <p class="foot">ACME General Insurance</p>
               <p class="time">11.14 AM</p>
-              <a class="link" data-go="loading" role="button"><img src="${A('a/waLink.svg')}" alt=""><span>Open Link</span></a>
+              <a class="link" data-go="items" role="button"><img src="${A('a/waLink.svg')}" alt=""><span>Open Link</span></a>
             </div>
             <div class="gap"></div>
           </div>
@@ -73,6 +73,56 @@
       ${C.homeIndicator()}`,
     // short phones: keep the latest message (and its Open Link button) in view, like WhatsApp does
     mount: (el) => { const chat = el.querySelector('.wa-chat'); chat.scrollTop = chat.scrollHeight; },
+  });
+
+  /* ---------- Inspection items (not in Figma): mandatory items locked on, optional flows can be switched off.
+     The rest of the flow follows this (App.state.items / C.has); Engine Sound is the only reason to open the bonnet. ---------- */
+  const ITEMS = [
+    ['Interior', [
+      { name: 'RC', sub: 'Photo · card or paper', img: 'b/ag-rc.png' },
+      { name: 'Odometer Reading', sub: 'Photo', img: 'b/ag-odo.png' },
+      { key: 'windshield', name: 'Windshield', sub: 'Video', img: 'b/ag-ws.png' },
+      { key: 'roof', name: 'Rooftop Glass', sub: 'Video', img: 'b/ag-roof.png' },
+    ]],
+    ['Exterior', [
+      { key: 'vin', name: 'VIN', sub: 'Photo', img: 'b/ag-vin.png' },
+      { key: 'engine', name: 'Engine Sound', sub: 'Video · needs the bonnet open', img: 'b/ag-engine.png' },
+      { name: '360° Walkaround', sub: 'Video', img: 'b/ag-360.png' },
+      { name: 'Damages', sub: 'Photos', img: 'e/dmg-sample.jpg' },
+    ]],
+  ];
+  App.screen({
+    id: 'items', title: 'Inspection Items', orientation: 'portrait', className: 'a-items', scroll: true,
+    vo: '"Choose what to capture. Required items are already selected. Tap Continue when ready."',
+    render: () => `
+      ${C.header({})}
+      <div class="body">
+        <div class="title-block">
+          <p class="h">Inspection Items</p>
+          <p class="s">Required items are always included. Untick any optional item you don’t want to capture.</p>
+        </div>
+        ${ITEMS.map(([sec, list]) => `
+          <div class="sec">
+            <p class="sec-h">${sec}</p>
+            ${list.map((it) => `
+              <label class="item ${it.key ? '' : 'req'}">
+                <div class="thumb"><img src="${A(it.img)}" alt=""></div>
+                <div class="txt">
+                  <p class="name">${esc(it.name)}</p>
+                  <p class="sub">${esc(it.sub)}</p>
+                  <span class="tag">${it.key ? 'Optional' : 'Required'}</span>
+                </div>
+                <input type="checkbox" ${it.key ? `data-item="${it.key}" ${C.has(it.key) ? 'checked' : ''}` : 'checked disabled'} aria-label="${esc(it.name)}">
+              </label>`).join('')}
+          </div>`).join('')}
+      </div>
+      <div class="foot">${C.footer({ buttons: [{ label: 'Continue', go: 'loading' }] })}</div>`,
+    mount: (el) => {
+      el.addEventListener('change', (e) => {
+        const k = e.target.dataset.item;
+        if (k) App.state.items[k] = e.target.checked;
+      });
+    },
   });
 
   /* ---------- Loading (2:1402 start, 536:34632 submit) ---------- */
