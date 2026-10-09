@@ -1,0 +1,66 @@
+/* group d-videos — Windshield / Rooftop / Engine video recordings, VIN photo, Close bonnet */
+
+/* ---------- record screens (Capture Button 158:68423, Video type) ---------- */
+.d-vid .capture-col { top: calc(var(--status-h) + 1px); height: auto; width: 96px; background: rgba(33,37,41,.7); }
+.d-vid .shutter { width: 64px; height: 64px; border-radius: 133.333px; transition: opacity .2s; }
+.d-vid .shutter img { left: 16px; top: 16px; width: 32px; height: 32px; }
+.d-vid .shutter-label { white-space: pre; }
+.d-vid[data-rec="starting"] .shutter, .d-vid[data-rec="saving"] .shutter, .d-vid .shutter.wait { opacity: .3; }
+.d-vid[data-rec="starting"] .shutter, .d-vid[data-rec="saving"] .shutter { pointer-events: none; }
+.d-vid .rec-timer {
+  position: absolute; left: 50%; top: calc(50% - 87px); transform: translateX(-50%); width: 48px;
+  display: flex; align-items: center; justify-content: center; padding: 4px 8px; border-radius: 30px; background: red;
+  font: 500 14px/1.25 var(--font-primary); color: var(--brand-light); white-space: nowrap;
+}
+.d-vid .rec-timer[hidden], .d-vid .countdown[hidden] { display: none; }
+.d-vid .countdown { position: absolute; left: 365px; top: calc(50% + var(--status-h) / 2 - 74px); width: 90px; height: 150px; z-index: 4; pointer-events: none; }
+.d-vid .countdown p { font: 600 150px/1 var(--font-primary); color: #fff; text-align: center; width: 90px; }
+
+/* Video Modals (343:35019) */
+.d-vid .instr-modal { padding: 16px; }
+.d-ws .instr-modal, .d-roof .instr-modal { top: 80.25px; bottom: auto; }
+.d-vid .instr-modal .vm-img { position: absolute; left: 0; top: 0; width: 480px; height: 276px; object-fit: cover; }
+.d-engine .instr-modal .vm-img { height: 292px; }
+.d-vid .instr-modal .vm-grad {
+  position: absolute; left: 0; top: 0; width: 480px; height: 292px;
+  background: linear-gradient(180deg, rgba(255,255,255,.02) 0%, rgba(255,255,255,0) 25%, rgba(255,255,255,0) 75%, rgba(255,255,255,.02) 100%);
+}
+
+/* ---------- recorded (140:43295) ---------- */
+.d-vrec { background: #fff; }
+.d-vrec .vbox { flex: 1 0 0; min-height: 1px; aspect-ratio: 359/206; border-radius: 12px; overflow: hidden; position: relative; background: #000; }
+.d-vrec .vbox video, .d-vrec .vbox > img, .d-vfs .vmedia video, .d-vfs .vmedia > img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.d-vrec .vgrad, .d-vfs .vgrad { position: absolute; inset: 0; background: linear-gradient(to bottom, rgba(0,0,0,0) 80%, #000); pointer-events: none; }
+.d-vrec .vctl, .d-vfs .vctl { display: flex; gap: 10px; align-items: center; width: 100%; }
+.d-vrec .vctl { position: absolute; left: 16px; right: 16px; bottom: 8px; width: auto; }
+.d-vrec .vctl button, .d-vfs .vctl button { flex-shrink: 0; display: block; }
+.d-vrec .vctl img { width: 16px; height: 16px; }
+.d-vrec .vbar, .d-vfs .vbar { flex: 1 0 0; min-width: 1px; height: 4px; background: rgba(255,255,255,.3); position: relative; cursor: pointer; }
+.d-vrec .vfill, .d-vfs .vfill { position: absolute; left: 0; top: 0; bottom: 0; background: #fff; border-radius: 99px; }
+.d-vrec .vtime { font: 500 10px/1.25 var(--font-primary); color: var(--brand-light); white-space: nowrap; flex-shrink: 0; }
+
+/* ---------- fullscreen preview (516:32005) ---------- */
+.d-vfs .vmedia { flex: 1 0 0; min-height: 1px; width: 100%; position: relative; border-radius: 12px; overflow: hidden; display: flex; flex-direction: column; justify-content: flex-end; padding: 20px; }
+.d-vfs .vctl { position: relative; }
+.d-vfs .vctl img { width: 24px; height: 24px; }
+.d-vfs .vtime { font: 500 14px/1.25 var(--font-primary); color: var(--brand-light); white-space: nowrap; flex-shrink: 0; }
+
+/* ---------- VIN (47:7857 / 153:45440 / 153:45980 / 516:32092) ---------- */
+.d-vin .capture-col { height: auto; top: calc(50% + 29.5px); bottom: auto; transform: translateY(-50%); }
+.d-vin .instr-overlay { top: 0; }
+.d-vin .vin-modal { border: 0; padding: 16px; justify-content: center; }
+.d-vin .vm-head { width: 100%; display: flex; flex-direction: column; gap: 4px; text-align: center; line-height: 1.2; }
+.d-vin .vm-head .t { font: 600 24px/1.2 var(--font-primary); color: var(--heading); }
+.d-vin .vm-head .s { font: 400 14px/1.2 var(--font-primary); color: var(--brand-dark); }
+.d-vin .vm-pic { flex: 1 0 0; min-height: 1px; aspect-ratio: 3548/1908; position: relative; }
+.d-vin .vm-pic img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.d-vin .captured-img { aspect-ratio: 549/206; }
+.fs.d-vin .media { aspect-ratio: auto; width: 100%; }
+
+/* ---------- Close Bonnet (346:37498) ---------- */
+.d-bonnet { background: #000; }
+.d-bonnet .bon-bg { position: absolute; left: 0; top: var(--status-h); width: 100%; height: calc(100% - var(--status-h)); object-fit: cover; }
+.d-bonnet .bon-modal { top: 32px; bottom: auto; border: 0; padding: 16px; gap: 20px; justify-content: center; }
+.d-bonnet .bon-modal .t { font: 600 24px/1.2 var(--font-primary); color: var(--heading); text-align: center; width: 100%; }
+.d-bonnet .vm-pic { flex: 1 0 0; min-height: 1px; width: 100%; display: flex; align-items: center; justify-content: center; }
+.d-bonnet .vm-pic img { height: 100%; width: auto; aspect-ratio: 284/145; }

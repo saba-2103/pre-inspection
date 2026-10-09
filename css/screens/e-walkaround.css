@@ -1,0 +1,111 @@
+/* Group E — 360° walkaround + damages (Stage 2, landscape). Every selector scoped under .v360 / .v360-fs / .dmg */
+
+/* ---------- shared: capture column (Figma "Capture" 762,·,64w centred at 50%+36px) ---------- */
+.v360 .capture-col, .dmg .capture-col { left: 762px; right: auto; width: 64px; padding: 0; height: auto; bottom: auto; top: calc(50% + 36px); transform: translateY(-50%); }
+.v360 .shutter-label, .dmg .shutter-label { line-height: normal; }
+
+/* header Back button (360 capture) */
+.v360 .back-btn { display: flex; gap: 10px; align-items: center; justify-content: center; padding: 12px 16px; border-radius: 8px; flex-shrink: 0; }
+.v360 .back-btn img { width: 24px; height: 24px; }
+.v360 .back-btn span { font: 700 16px/normal var(--font-secondary); letter-spacing: .5px; color: var(--brand-light); white-space: nowrap; }
+
+/* ---------- Angles list (left rail) ---------- */
+.v360 .ang-list { position: absolute; left: 16px; top: 94px; bottom: 0; width: 96px; overflow-x: hidden; overflow-y: auto; z-index: 3; scrollbar-width: none; }
+.v360 .ang-list::-webkit-scrollbar { display: none; }
+.v360 .ang-col { display: flex; flex-direction: column; gap: 8px; }
+.v360 .ang { width: 96px; flex-shrink: 0; background: #f7f7f7; border: 1px solid #fff; border-radius: 8px; overflow: hidden; }
+.v360 .ang.current { border-color: var(--brand-primary); }
+.v360 .ang.todo { opacity: .3; }
+.v360 .ang-h { height: 22px; padding: 4px; display: flex; gap: 4px; align-items: center; background: var(--surface-bg-brand); }
+.v360 .ang-h .num { width: 12px; height: 12px; border-radius: 75px; background: #002767; flex-shrink: 0; font: 600 8px/12px var(--font-secondary); color: #fff; text-align: center; }
+.v360 .ang-h .ck { width: 12px; height: 12px; flex-shrink: 0; }
+.v360 .ang-h p { font: 500 10px/1 var(--font-primary); color: #212529; white-space: nowrap; }
+.v360 .ang-img { height: 64px; background: #fff; position: relative; overflow: hidden; }
+.v360 .ang-img img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+
+/* ---------- capture overlays ---------- */
+.v360 .minimap { position: absolute; left: 740px; top: 106px; width: 97px; height: 64px; border-radius: 8px; z-index: 3; }
+.v360 .rec { position: absolute; left: 141px; top: 105px; z-index: 3; display: flex; gap: 4px; align-items: center; padding: 4px 8px 4px 6px; border-radius: 100px; background: #ddf6ec; }
+.v360 .rec img { width: 10px; height: 10px; }
+.v360 .rec span { font: 400 10px/1 var(--font-secondary); letter-spacing: .5px; color: #002767; white-space: nowrap; }
+.v360 .rec.alt { left: 749px; top: 355px; }
+.v360 .move-arrow { position: absolute; left: 310px; top: 94px; width: 231px; height: 26px; z-index: 3; display: flex; gap: 4px; align-items: center; justify-content: center; padding: 6px 8px; border-radius: 0 0 8px 8px; background: rgba(33,37,41,.7); }
+.v360 .move-arrow.alt { top: 46px; }
+.v360 .move-arrow img { width: 35px; height: 12px; flex-shrink: 0; animation: v360-arrows 1.4s ease-in-out infinite; }
+.v360 .move-arrow span { font: 400 12px/normal var(--font-secondary); color: #fff; white-space: nowrap; }
+@keyframes v360-arrows { 0%, 100% { opacity: 1; } 50% { opacity: .45; } }
+.v360-alt .info-badge { bottom: 27px; }
+
+/* ---------- 360 Instruction modal (346:38071) ---------- */
+.v360 .v360-ov { position: absolute; left: 0; right: 0; top: var(--status-h); bottom: 0; background: rgba(0,0,0,.7); z-index: 10; overflow: hidden; }
+.v360 .i-modal {
+  position: absolute; left: 50%; bottom: 32px; transform: translateX(-50%); width: 480px; height: 292px; padding: 16px; border-radius: 16px; overflow: hidden;
+  background: var(--brand-light); display: flex; flex-direction: column; gap: 20px; align-items: center; justify-content: center;
+  box-shadow: 0 241px 67px 0 rgba(0,39,103,0), 0 154px 62px 0 rgba(0,39,103,.01), 0 87px 52px 0 rgba(0,39,103,.05), 0 39px 39px 0 rgba(0,39,103,.09), 0 10px 21px 0 rgba(0,39,103,.1);
+}
+.v360 .i-title { font: 600 24px/1.2 var(--font-primary); color: #002767; text-align: center; width: 100%; }
+.v360 .i-img { flex: 1 0 0; min-height: 1px; width: 100%; display: flex; align-items: center; justify-content: center; }
+.v360 .i-pic { height: 100%; aspect-ratio: 1672/941; position: relative; flex-shrink: 0; }
+.v360 .i-pic img { pointer-events: none; position: absolute; left: -14px; top: -3px; width: 291px; height: 201px; max-width: none; }
+
+/* ---------- 360 Context — Do's & Don'ts (346:37267) ---------- */
+.v360 .c-card { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); width: 810px; padding: 12px; border-radius: 20px; background: #fff; display: flex; flex-direction: column; gap: 12px; align-items: center; }
+.v360 .c-cols { display: flex; gap: 16px; height: 228px; width: 100%; align-items: center; }
+.v360 .c-col { flex: 1 0 0; min-width: 1px; height: 100%; display: flex; flex-direction: column; gap: 8px; }
+.v360 .c-head { width: 100%; display: flex; gap: 8px; align-items: center; justify-content: center; padding: 6px 8px; border-radius: 8px; flex-shrink: 0; }
+.v360 .c-head.do { background: #efffef; }
+.v360 .c-head.dont { background: #ffefef; }
+.v360 .c-head img { width: 24px; height: 24px; flex-shrink: 0; }
+.v360 .c-head p { flex: 1 0 0; font: 500 18px/1.2 var(--font-secondary); color: #212529; letter-spacing: -0.02em; }
+.v360 .c-body { flex: 1 0 0; min-height: 1px; width: 100%; display: flex; flex-direction: column; gap: 4px; }
+.v360 .c-row { display: flex; gap: 20px; width: 100%; }
+.v360 .c-row p { flex: 1 0 0; min-width: 1px; text-align: center; color: #212529; letter-spacing: -0.04em; } /* Effra (unavailable) → Inter, tightened */
+.v360 .c-titles p { font: 500 14px/1.2 var(--font-secondary); }
+.v360 .c-caps p { font: 400 12px/1.2 var(--font-secondary); }
+.v360 .c-pics { flex: 1 0 0; min-height: 1px; align-items: stretch; }
+.v360 .c-pic { flex: 1 0 0; min-width: 1px; position: relative; }
+.v360 .c-pic img { pointer-events: none; position: absolute; left: 0; top: 0; width: 178.5px; height: 137px; max-width: none; }
+.v360 .c-sep { width: 0; height: 100%; border-left: 1px solid #e5e5e5; flex-shrink: 0; }
+.v360 .c-btn { width: 300px; }
+
+/* ---------- 360 Captured (2:2113) ---------- */
+.v360-cpd .body { flex: 1 0 0; min-height: 1px; width: 100%; display: flex; gap: 16px; padding: 0 16px; }
+.v360-cpd .ang-list { position: relative; left: auto; top: auto; bottom: auto; height: 100%; flex-shrink: 0; }
+.v360-cpd .content { flex: 1 0 0; min-width: 1px; display: flex; flex-direction: column; align-items: center; }
+.v360-cpd .pic { flex: 1 0 0; min-height: 1px; aspect-ratio: 494/278; max-width: 100%; border-radius: 12px; overflow: hidden; position: relative; background: #e9edf5; cursor: zoom-in; }
+.v360-cpd .pic img, .v360-cpd .pic video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.v360-cpd .content .home-indicator { padding: 8px 0; }
+.v360-cpd .ctas { width: 96px; flex-shrink: 0; display: flex; flex-direction: column; gap: 20px; align-items: center; justify-content: center; }
+.v360-cpd .ctas .btn { flex: none; width: 100%; height: 43px; padding: 12px 16px; border-radius: 8px; }
+.v360-cpd .ctas .btn-grey { background: #dee1e5; color: var(--brand-dark); }
+.v360-cpd .ctas .btn[disabled] { opacity: .3; }
+
+/* ---------- 360 Captured preview (534:32755): 597×356 image ---------- */
+.v360-fs .media { aspect-ratio: 597/356; }
+
+/* ---------- Damages (155:66860 / 155:66654 / 155:67135) ---------- */
+.dmg .d-thumbs { position: absolute; left: 746px; top: 94px; width: 96px; z-index: 3; display: flex; flex-direction: column; gap: 4px; align-items: center; }
+.dmg .d-thumb { width: 56px; height: 56px; border-radius: 8px; overflow: hidden; position: relative; background: rgba(255,255,255,.1); }
+.dmg .d-thumb::after { content: ''; position: absolute; inset: 0; border: 1px solid #fff; border-radius: 8px; }
+.dmg .d-thumb img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.dmg .d-count { width: 100%; font: 500 12px/16px var(--font-primary); color: #fff; text-align: center; }
+.dmg .d-finish { position: absolute; left: 738px; top: 325px; width: 96px; z-index: 4; }
+.dmg .d-finish .btn { width: 100%; height: 43px; padding: 12px 16px; border-radius: 8px; flex: none; }
+
+/* Damages instruction modal (155:67022) */
+.dmg .d-modal {
+  position: absolute; left: 50%; bottom: 32px; transform: translateX(-50%); width: 480px; height: 292px; padding: 20px; border-radius: 16px; overflow: hidden;
+  background: #fff; display: flex; flex-direction: column; gap: 10px; align-items: center; justify-content: center;
+  box-shadow: 0 241px 67px 0 rgba(0,39,103,0), 0 154px 62px 0 rgba(0,39,103,.01), 0 87px 52px 0 rgba(0,39,103,.05), 0 39px 39px 0 rgba(0,39,103,.09), 0 10px 21px 0 rgba(0,39,103,.1);
+}
+.dmg .d-titles { width: 100%; display: flex; flex-direction: column; gap: 4px; text-align: center; }
+.dmg .d-title { font: 600 24px/1.2 var(--font-primary); color: #002767; }
+.dmg .d-sub { font: 400 14px/1.35 var(--font-secondary); color: #212529; }
+.dmg .d-imgs { width: 100%; height: 137px; display: flex; gap: 12px; }
+.dmg .d-tip { flex: 1 0 0; min-width: 1px; display: flex; flex-direction: column; gap: 10px; }
+.dmg .d-tip img { width: 100%; height: 99px; border-radius: 12px; object-fit: cover; }
+.dmg .d-tip p { font: 600 12px/1.2 var(--font-primary); color: #002767; text-align: center; }
+.dmg .d-btns { width: 100%; display: flex; gap: 8px; }
+.dmg .d-btns .btn { height: 43px; }
+.dmg .d-btns .btn-modal { flex: 1 0 0; width: auto; }
+.dmg .d-btns .btn-skip { padding: 12px 16px; border-radius: 8px; width: 68px; }
