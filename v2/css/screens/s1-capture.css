@@ -1,0 +1,5 @@
+/* V2 · Stage 1 · Inside the car (landscape) — values from Figma 648:21105. Shared camera chrome lives in base.css. */
+/* Card / Paper RC toggle replaces the progress pill on the first RC screen (649:21404 / 649:21444) */
+.rc-toggle { position: absolute; z-index: 5; left: 50%; top: 44px; transform: translateX(-50%); display: flex; gap: 4px; padding: 4px; border-radius: 12px; background: rgba(12,17,38,.62); }
+.rc-toggle button { padding: 7px 14px; border-radius: 9px; font: 600 13px/normal var(--ff); color: #fff; white-space: nowrap; }
+.rc-toggle button.on { background: #fff; color: var(--brand); }

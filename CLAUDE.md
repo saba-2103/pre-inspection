@@ -1,10 +1,16 @@
 # ACME Car Pre-Inspection prototype
 
-Clickable, pixel-faithful prototype of the Figma file `y3dQbyV1svoVUalmewQvgF` (Anaira-Pre-Inspection), section `2:1323` "ACME - V1".
+Clickable, pixel-faithful prototypes of the Figma file `y3dQbyV1svoVUalmewQvgF` (Anaira-Pre-Inspection).
 Plain static site: no build step, no framework, no package.json. Open `index.html` through any HTTPS host.
 
+## Versions
+- Root `index.html` is the launcher: a card per version (`VERSIONS` array in the page). Add a version = new folder + one array entry.
+- Each version is a self-contained app in its own folder (`v1/`, `v2/`, …) with its own `index.html`, `js/`, `css/`, `assets/`; all paths relative.
+- `v1/` = section `2:1323` "ACME - V1". Paths below are relative to a version folder (V1 layout).
+- `v2/` = Figma page "V2" (648:21081), from the "UX Audit & Redesign" page (612:21081). Own runtime based on V1's: `js/core.js` (router + counter-rotation layout, captions, camera live checks/torch/sample stills, background uploads), `js/ui.js` (camera chrome `U.cam`/`U.mountCam`, `U.photoItem`/`U.videoItem`, verdict, toast), `js/flow.js` (item lists, progress counts, routing; loaded before screens), `js/screens/s0–s3`. `?fast=1` = 3 s video minimum for testing; `#/review?state=attention|good` = sample review.
+
 ## Deploy
-- Vercel: `npx vercel --prod` from this folder (static site; accept defaults, no framework, no build command, output dir `.`).
+- Pushing `main` to GitHub (saba-2103/pre-inspection) auto-deploys on Vercel. Manual: `npx vercel --prod` from this folder (static site; accept defaults, no framework, no build command, output dir `.`).
 - Camera, microphone and location need HTTPS (or localhost). Local test: `npx serve .` then open http://localhost:3000.
 
 ## Structure

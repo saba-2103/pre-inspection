@@ -1,0 +1,85 @@
+/* V2 · Stage 3 · Review & submit (portrait) — values from Figma 648:21117 */
+
+/* 34 / 35 Review */
+.s3-review .ptop { padding-bottom: 4px; }
+.s3-review .pbody { gap: 14px; padding: 10px 20px 16px; }
+.up-card { display: flex; gap: 10px; align-items: center; padding: 10px 12px; border-radius: 12px; }
+.up-card > img { width: 20px; height: 20px; flex-shrink: 0; }
+.up-card .uc { flex: 1; display: flex; flex-direction: column; gap: 6px; }
+.up-card p { font: 500 13px/normal var(--ff); color: var(--body); }
+.up-card i { display: block; height: 4px; border-radius: 2px; background: var(--line); overflow: hidden; }
+.up-card b { display: block; height: 4px; border-radius: 2px; background: var(--brand); transition: width .4s; }
+.sl { font: 600 11px/normal var(--ff); letter-spacing: .88px; }
+.sl.bad { color: var(--err); }
+.sl.ok { color: var(--ok); }
+.att { display: flex; gap: 12px; align-items: center; padding: 10px 12px 10px 10px; border-color: #fecdca; border-radius: 14px; }
+.att .th { width: 72px; height: 50px; border-radius: 8px; overflow: hidden; flex-shrink: 0; background: #e4e7ec; }
+.att .th img { width: 100%; height: 100%; object-fit: cover; }
+.att .pt { flex: 1; min-width: 1px; display: flex; flex-direction: column; gap: 3px; }
+.att b { font: 600 15px/normal var(--ff); color: var(--text); }
+.att em { display: flex; gap: 4px; align-items: center; font: 400 12px/normal var(--ff); color: var(--err-dk); font-style: normal; }
+.att em img { width: 14px; height: 14px; }
+.att .rt, .pv .rt { background: var(--tint); color: var(--brand); font: 600 13px/normal var(--ff); padding: 8px 12px; border-radius: 10px; flex-shrink: 0; }
+.grp-card { padding: 12px; border-radius: 14px; display: flex; flex-direction: column; gap: 10px; }
+.grp-card .gh { display: flex; gap: 8px; align-items: center; cursor: pointer; }
+.grp-card .ok { width: 20px; height: 20px; border-radius: 10px; background: var(--ok); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.grp-card .ok img { width: 13px; height: 13px; }
+.grp-card .gh b { flex: 1; font: 600 15px/normal var(--ff); color: var(--text); }
+.grp-card .gh span { font: 400 13px/normal var(--ff); color: var(--muted); }
+.grp-card .chev { width: 18px; height: 18px; transition: transform .2s; }
+.grp-card.open .chev { transform: rotate(90deg); }
+.gthumbs { display: flex; gap: 6px; flex-wrap: wrap; }
+.gt { width: 74px; display: flex; flex-direction: column; gap: 3px; align-items: flex-start; }
+.gt img { width: 74px; height: 46px; border-radius: 6px; object-fit: cover; background: #e4e7ec; }
+.gt span { font: 500 10px/1.2 var(--ff); color: var(--muted); text-align: left; }
+.rv-foot { position: sticky; bottom: 0; background: #fff; margin-top: auto; gap: 8px; }
+.pv { position: absolute; inset: 0; z-index: 30; background: rgba(12,17,38,.7); display: flex; align-items: center; justify-content: center; padding: 20px; }
+.pv-card { background: #fff; border-radius: 16px; padding: 16px; width: 100%; display: flex; flex-direction: column; gap: 12px; }
+.pv-media { aspect-ratio: 16 / 10; border-radius: 12px; overflow: hidden; background: #000; }
+.pv-media img, .pv-media video { width: 100%; height: 100%; object-fit: cover; }
+.pv-l { font: 600 15px/normal var(--ff); color: var(--text); }
+.pv-b { display: flex; gap: 10px; }
+
+/* 36 Anything we should know */
+.s3-note .pbody { gap: 18px; padding-top: 10px; }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.nc { display: flex; gap: 6px; align-items: center; padding: 10px 14px; border-radius: 99px; background: #fff; border: 1px solid var(--line2); font: 500 14px/normal var(--ff); color: var(--body); }
+.nc.on { background: var(--brand); border-color: var(--brand); color: #fff; font-weight: 600; }
+.nc img { width: 14px; height: 14px; }
+.nbox { display: flex; flex-direction: column; gap: 10px; background: #fff; border: 1px solid var(--line2); border-radius: 14px; padding: 12px 14px; }
+.nbox:focus-within { border-color: var(--brand); }
+.nbox textarea { border: 0; outline: 0; resize: none; min-height: 66px; font: 400 15px/22px var(--ff); color: var(--text); background: transparent; }
+.nbox textarea::placeholder { color: var(--muted); }
+.nrow { display: flex; align-items: center; justify-content: space-between; }
+.nrow > span { font: 400 12px/normal var(--ff); color: var(--muted); }
+.speak { display: flex; gap: 6px; align-items: center; padding: 6px 12px 6px 10px; border-radius: 99px; background: var(--tint); font: 600 13px/normal var(--ff); color: var(--brand); }
+.speak img { width: 16px; height: 16px; }
+.speak.on { background: var(--brand); color: #fff; }
+.speak.on img { filter: brightness(0) invert(1); animation: rec-blink 1.2s ease-in-out infinite; }
+
+/* 37 Submitting (shares the loading layout) */
+.s3-sub .ld-foot.muted { color: var(--muted); font-weight: 400; }
+
+/* 38 Success */
+.ok-body { flex: 1 0 auto; display: flex; flex-direction: column; align-items: center; gap: 18px; padding: 28px 20px 0; }
+.ok-ic { width: 72px; height: 72px; border-radius: 36px; background: var(--ok); display: flex; align-items: center; justify-content: center; }
+.ok-ic img { width: 36px; height: 36px; }
+.ok-h { font: 600 28px/34px var(--ff-h); color: var(--ink); text-align: center; }
+.ref { display: flex; gap: 8px; align-items: center; padding: 8px 10px 8px 14px; border-radius: 10px; }
+.ref > span { font: 400 14px/normal var(--ff); color: var(--muted); }
+.ref b { font: 600 15px/normal var(--ff); color: var(--text); }
+.ref button { display: flex; gap: 4px; align-items: center; background: var(--tint); border-radius: 6px; padding: 4px 8px; font: 600 12px/normal var(--ff); color: var(--brand); }
+.ref button img { width: 14px; height: 14px; }
+.next { width: 100%; padding: 14px 16px; display: flex; flex-direction: column; }
+.next .nh { font: 600 11px/normal var(--ff); color: var(--muted); letter-spacing: .88px; }
+.nx { display: flex; gap: 12px; align-items: center; padding: 12px 0; }
+.nx > span { width: 36px; height: 36px; border-radius: 18px; background: var(--tint); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.nx > span.on { background: var(--brand); }
+.nx > span img { width: 18px; height: 18px; }
+.nx .pt, .sum .pt { flex: 1; display: flex; flex-direction: column; gap: 2px; }
+.nx b, .sum b { font: 600 15px/normal var(--ff); color: var(--text); }
+.nx em, .sum em { font: 400 13px/normal var(--ff); color: var(--muted); font-style: normal; }
+.sum { width: 100%; display: flex; gap: 12px; align-items: center; padding: 12px 14px 12px 12px; border-radius: 14px; }
+.sum .th { width: 56px; height: 40px; border-radius: 8px; overflow: hidden; flex-shrink: 0; }
+.sum .th img { width: 100%; height: 100%; object-fit: cover; }
+.sum .chev { width: 18px; height: 18px; }

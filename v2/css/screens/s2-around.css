@@ -1,0 +1,75 @@
+/* V2 · Stage 2 · Around the car (landscape) — values from Figma 648:21111 */
+
+/* 16 Step out */
+.screen.s2-out { background: var(--bg); }
+.so-body { position: absolute; left: 0; right: 0; top: 34px; bottom: 0; display: flex; gap: 24px; padding: 18px 24px 20px; }
+.so-left { flex: 1 0 0; min-width: 1px; display: flex; flex-direction: column; gap: 12px; align-items: flex-start; }
+.so-chip { background: var(--ok-bg); color: var(--ok); font: 600 12px/normal var(--ff); padding: 5px 10px; border-radius: 999px; }
+.so-h { font: 600 26px/normal var(--ff-h); color: var(--ink); }
+.so-s { font: 400 15px/22px var(--ff); color: var(--body); max-width: 380px; }
+.so-left .sp { flex: 1; }
+.so-left .btn { border-radius: 10px; padding: 14px; }
+.so-plan { width: 380px; flex-shrink: 0; border-radius: 14px; padding: 6px 14px; display: flex; flex-direction: column; overflow: hidden; }
+.so-plan .ph { font: 600 11px/normal var(--ff); color: var(--muted); padding: 8px 0 6px; }
+.pr2 { display: flex; gap: 12px; align-items: center; padding: 8px 0; }
+.pr2 .th { width: 52px; height: 36px; border-radius: 6px; overflow: hidden; background: var(--ink); flex-shrink: 0; }
+.pr2 .th img { width: 100%; height: 100%; object-fit: cover; }
+.pr2 .pt { flex: 1; min-width: 1px; display: flex; flex-direction: column; gap: 2px; }
+.pr2 b { font: 600 14px/normal var(--ff); color: var(--text); }
+.pr2 em { font: 400 12px/normal var(--ff); color: var(--muted); font-style: normal; white-space: nowrap; }
+.pr2 .m { font: 500 12px/normal var(--ff); color: var(--muted); white-space: nowrap; }
+
+/* 20–29 Walk-around: progress ring replaces the torch, shutter moves down */
+.walk .ring-wrap { position: absolute; z-index: 5; right: 0; top: 96px; width: 110px; height: 110px; }
+.walk .wring { width: 110px; height: 110px; }
+.walk .shutter { top: 214px; }
+.next-chip { position: absolute; z-index: 4; right: 162px; bottom: 72px; display: flex; gap: 6px; align-items: center; padding: 6px 12px 6px 10px; border-radius: 99px; background: rgba(12,17,38,.7); font: 600 12px/normal var(--ff); color: #fff; white-space: nowrap; }
+.next-chip img { width: 16px; height: 16px; }
+
+/* 30 / 32 Damages map */
+.screen.s2-dmg { background: var(--bg); }
+.dm-top { position: absolute; left: 20px; right: 20px; top: 44px; display: flex; justify-content: space-between; align-items: center; }
+.dm-top .h { font: 600 20px/normal var(--ff-h); color: var(--ink); }
+.dm-top .s { font: 400 13px/normal var(--ff); color: var(--muted); }
+.dm-map { position: absolute; left: 20px; top: 112px; width: 330px; height: 250px; }
+.dmap { width: 330px; height: 250px; display: block; }
+.dmap .lab { font: 400 11px/1 var(--ff); fill: var(--muted); text-anchor: middle; }
+.dmap .pnl { fill: #fff; stroke: #D0D5DD; stroke-width: 1; cursor: pointer; transition: fill .15s; }
+.dmap .pnl.tint { fill: #EEF2FF; }
+.dmap .pnl:hover { fill: #E0E7FF; }
+.dmap .pnl.hit { fill: #FDE2E1; stroke: #F04438; }
+.dmap .mk circle { fill: #F04438; }
+.dmap .mk text { font: 700 11px/1 var(--ff); fill: #fff; text-anchor: middle; pointer-events: none; }
+.dmap .mk { pointer-events: none; }
+.dmap.nudge .pnl { animation: dm-nudge .9s ease-in-out; }
+@keyframes dm-nudge { 30% { fill: #C7D2FE; } }
+.dm-side { position: absolute; left: 380px; right: 20px; top: 112px; bottom: 28px; display: flex; flex-direction: column; gap: 10px; }
+.dm-list { flex: 1 0 0; min-height: 1px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; }
+.dm-empty { padding: 16px 20px; display: flex; flex-direction: column; gap: 6px; border-radius: 14px; }
+.dm-empty b { font: 600 15px/normal var(--ff); color: var(--text); }
+.dm-empty p { font: 400 13px/1.4 var(--ff); color: var(--muted); }
+.dm-row { background: #fff; border: 1px solid var(--line); border-radius: 14px; padding: 10px 14px 10px 10px; display: flex; gap: 12px; align-items: center; flex-shrink: 0; }
+.dm-row .num { width: 24px; height: 24px; border-radius: 12px; background: var(--rec); color: #fff; font: 700 12px/24px var(--ff); text-align: center; flex-shrink: 0; }
+.dm-row .th { width: 64px; height: 44px; border-radius: 8px; overflow: hidden; flex-shrink: 0; background: #e4e7ec; }
+.dm-row .th img { width: 100%; height: 100%; object-fit: cover; }
+.dm-row .pt { flex: 1; min-width: 1px; display: flex; flex-direction: column; gap: 2px; }
+.dm-row b { font: 600 15px/normal var(--ff); color: var(--text); white-space: nowrap; }
+.dm-row em { font: 400 12px/normal var(--ff); color: var(--muted); font-style: normal; }
+.dm-row .type { background: #fffaeb; color: #b54708; font: 600 12px/normal var(--ff); padding: 5px 10px; border-radius: 99px; }
+.dm-row .types { display: flex; gap: 4px; flex-wrap: wrap; justify-content: flex-end; max-width: 150px; }
+.dm-row .types button { border: 1px solid var(--line2); background: #fff; color: var(--body); font: 600 11px/normal var(--ff); padding: 4px 8px; border-radius: 99px; }
+.dm-add { border: 1px dashed var(--brand); border-radius: 14px; padding: 12px; display: flex; gap: 8px; align-items: center; justify-content: center; font: 600 14px/normal var(--ff); color: var(--brand); flex-shrink: 0; }
+.dm-add img { width: 18px; height: 18px; }
+.dm-side > .btn { flex-shrink: 0; padding: 14px; font-size: 15px; }
+
+/* 33 Turn upright */
+.screen.s2-up { background: var(--brand); }
+.up-body { position: absolute; left: 0; right: 0; top: 34px; bottom: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; cursor: default; }
+.up-body .tbox { width: 96px; height: 56px; border: 2.5px solid #fff; border-radius: 10px; display: flex; align-items: center; justify-content: center; margin-bottom: 8px; animation: tp-rock 2.4s ease-in-out infinite; }
+.up-body .tbox img { width: 26px; height: 26px; }
+.up-h { font: 600 26px/normal var(--ff-h); color: #fff; }
+.up-s { font: 400 15px/normal var(--ff); color: rgba(255,255,255,.8); }
+.up-chips { display: flex; gap: 8px; margin-top: 6px; }
+.up-chips span { background: rgba(255,255,255,.18); color: #fff; font: 600 13px/normal var(--ff); padding: 6px 12px; border-radius: 99px; }
+.up-tap { font: 500 12px/normal var(--ff); color: rgba(255,255,255,.6); margin-top: 8px; }
+html.framed .up-body { cursor: pointer; }

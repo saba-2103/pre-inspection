@@ -1,6 +1,7 @@
 # ACME Car Pre-Inspection — prototype
 
-An end-to-end, clickable prototype of the Figma file "Anaira-Pre-Inspection" (section "ACME - V1").
+End-to-end, clickable prototypes of the Figma file "Anaira-Pre-Inspection". The root page lists every version;
+each version is a self-contained app in its own folder (`v1/` = section "ACME - V1", `v2/` = page "V2", the redesign).
 Live camera, real photo captures, real video recordings (with audio), real permission prompts and voice-over.
 
 ## Try it on a phone (camera needs HTTPS)
@@ -11,7 +12,7 @@ Live camera, real photo captures, real video recordings (with audio), real permi
 
 On a laptop, open the same link to see the flow inside a phone frame (the webcam stands in for the phone camera).
 
-## Useful links
+## Useful links (inside a version, e.g. `v1/`)
 - `#/__index` lists every screen and state, for jumping straight to one during design review.
 - The Inspection Items screen (after WhatsApp) picks which optional captures run (windshield, rooftop, VIN, engine sound); the bonnet is only opened for engine sound.
 - `?optional=0` starts with every optional item unticked.
@@ -20,5 +21,5 @@ On a laptop, open the same link to see the flow inside a phone frame (the webcam
 - Photos that are too dark or blurry are flagged for retake/recapture by an on-device check.
 
 ## Structure
-`index.html` → `js/core.js` (router, camera, recording, voice-over), `js/components.js` (shared UI),
+`index.html` (version launcher) · per version: `vN/index.html` → `js/core.js` (router, camera, recording, voice-over), `js/components.js` (shared UI),
 `js/screens/*.js` + `css/screens/*.css` (one file per flow stage), `assets/` (exported from Figma).
