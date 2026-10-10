@@ -89,7 +89,7 @@
   };
 
   /* ---------- Landscape capture screen ----------
-     o = {stepper, cutout:{left,top,width,height,radius,border,right?}, badge, shutterLabel, shutterIcon, zoom:true,
+     o = {stepper, cutout:{left,top,width,height,radius,border,right?}, badge,  (height null → window runs to the bottom edge) shutterLabel, shutterIcon, zoom:true,
           instruction:{title, image(s), button}, extra:'html', fallbackImg} */
   C.captureScreen = (o) => {
     // default = Figma capture Overlay (2:1608): #212529 @70% with a 660x272 r20 window + 2px white@30% ring
@@ -97,7 +97,8 @@
     // offsets are from the 850×390 design; anchor them to the centre so the window stays centred on wider/taller phones
     // with `right`, the window stretches between fixed side margins (wide phones get a wider window)
     const x = c.right != null ? `left:${c.left}px;right:${c.right}px;` : `left:calc(50% + ${c.left - 425}px);width:${c.width}px;`;
-    const cut = `${x}top:calc(50% + ${c.top - 195}px);height:${c.height}px;border-radius:${c.radius || 0}px;${c.border ? `border:${c.border};` : ''}${c.shade ? `box-shadow:0 0 0 3000px ${c.shade};` : 'box-shadow:none;'}`; // no shade → no dimming at all (video screens)
+    const y = c.height == null ? `top:${c.top}px;bottom:0;` : `top:calc(50% + ${c.top - 195}px);height:${c.height}px;`;
+    const cut = `${x}${y}border-radius:${c.radius || 0}px;${c.border ? `border:${c.border};` : ''}${c.shade ? `box-shadow:0 0 0 3000px ${c.shade};` : 'box-shadow:none;'}`; // no shade → no dimming at all (video screens)
     return `
       <div class="cam-slot"></div>
       <div class="cutout ${c.ring ? 'ring' : ''}" style="${cut}"></div>

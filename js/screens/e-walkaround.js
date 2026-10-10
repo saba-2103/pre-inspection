@@ -8,16 +8,16 @@
   const LABELS = ['Front', 'Front Left', 'Left Half', 'Left Half 2', 'Rear Left', 'Rear', 'Rear Right', 'Right Half', 'Right Half 2', 'Front Right'];
   // Per step: Figma title name, capture node, captured node, fs node, info badge (frame text), VO (annotation text)
   const STEPS = [
-    ['Front', '346:36914', '2:2113', '534:32755', 'Fit the car in frame and tap on the shutter', '"Now, capture the front. Keep it inside the frame and tap Capture."'],
-    ['Front Right', '155:57184', '155:56979', '534:32787', 'Fit the Front Right in frame and tap on the shutter', '"Hold still and walk slowly to the next spot. Now, capture the front left.”'],
-    ['Right Half 1', '155:57414', '155:57392', '534:32819', 'Fit the front side of Right Half in frame and tap on the shutter', '"Hold still and walk slowly to the next spot. Now, capture the left side front half.”'],
-    ['Right Half 2', '155:57830', '155:57808', '534:32851', 'Fit the backside of Right Half in frame and tap on the shutter', '"Now, capture the left side rear half."'],
-    ['Rear Right', '155:58243', '155:58221', '534:32881', 'Fit the Rear Right part in frame and tap on the shutter', '"Now, capture the rear left.”'],
-    ['Rear', '155:58656', '155:58634', '534:32916', 'Fit the Rear side of the car in frame and tap on the shutter', '"Now, capture the rear."'],
-    ['Rear Left', '155:59070', '155:59048', '534:32948', 'Fit the Rear Left in frame and tap on the shutter', '"Now, capture the rear right."'],
-    ['Left Half 1', '155:59484', '155:59462', '534:32980', 'Fit the backside of the Left Half in frame and tap on the shutter', '"Now, capture the right side rear half."'],
-    ['Left Half 2', '155:59920', '155:59876', '534:33009', 'Fit the front side of the Left Half in frame and tap on the shutter', '"Now, capture the right side front half."'],
-    ['Front Left', '155:59937', '155:59898', '534:33044', 'Fit the Front Left part in frame and tap on the shutter', '"Now, capture the front right."'],
+    ['Front', '346:36914', '2:2113', '534:32755', 'Fit the car to the screen and tap on the shutter', '"Now, capture the front. Keep it inside the frame and tap Capture."'],
+    ['Front Right', '581:20934', '155:56979', '534:32787', 'Fit the Front Right to the screen and tap on the shutter', '"Hold still and walk slowly to the next spot. Now, capture the front left.”'],
+    ['Right Half 1', '155:57414', '155:57392', '534:32819', 'Fit the front side of Right Half to the screen and tap on the shutter', '"Hold still and walk slowly to the next spot. Now, capture the left side front half.”'],
+    ['Right Half 2', '155:57830', '155:57808', '534:32851', 'Fit the backside of Right Half to the screen and tap on the shutter', '"Now, capture the left side rear half."'],
+    ['Rear Right', '155:58243', '155:58221', '534:32881', 'Fit the Rear Right part to the screen and tap on the shutter', '"Now, capture the rear left.”'],
+    ['Rear', '155:58656', '155:58634', '534:32916', 'Fit the Rear side of the car to the screen and tap on the shutter', '"Now, capture the rear."'],
+    ['Rear Left', '155:59070', '155:59048', '534:32948', 'Fit the Rear Left to the screen and tap on the shutter', '"Now, capture the rear right."'],
+    ['Left Half 1', '155:59484', '155:59462', '534:32980', 'Fit the backside of the Left Half to the screen and tap on the shutter', '"Now, capture the right side rear half."'],
+    ['Left Half 2', '155:59920', '155:59876', '534:33009', 'Fit the front side of the Left Half to the screen and tap on the shutter', '"Now, capture the right side front half."'],
+    ['Front Left', '155:59937', '155:59898', '534:33044', 'Fit the Front Left part to the screen and tap on the shutter', '"Now, capture the front right."'],
   ];
   const SCROLL = [0, 0, 94, 188, 282, 376, 470, 564, 678, 660]; // Angles List scroll offset per step (Figma)
   const key = (n) => 'v360_' + n;
@@ -40,21 +40,22 @@
       return `<div class="ang ${st}"><div class="ang-h">${head}<p>${esc(label)}</p></div><div class="ang-img">${img}</div></div>`;
     }).join('')}</div></div>`;
 
-  const recBadge = (cls = '') => `<div class="rec ${cls}"><img src="${A('e/dot.svg')}" alt=""><span>RECORDING</span></div>`;
-  const moveArrow = (cls = '') => `<div class="move-arrow ${cls}"><img src="${A('e/arrows.svg')}" alt=""><span>Walk around the car slowly</span><img src="${A('e/arrows.svg')}" alt=""></div>`;
+  const recBadge = () => `<div class="rec"><img src="${A('e/dot.svg')}" alt=""><span>RECORDING</span></div>`;
+  const moveArrow = () => `<div class="move-arrow"><img src="${A('e/arrows.svg')}" alt=""><span>Walk around the car slowly</span><img src="${A('e/arrows.svg')}" alt=""></div>`;
   const backBtn = (to) => `<div class="lhs"><button class="back-btn" data-go="${to}"><img src="${A('e/back.svg')}" alt=""><span>Back</span></button></div>`;
   const withBack = (html, to) => html.replace(/<div class="lhs">[\s\S]*?<\/div>/, backBtn(to));
 
-  /* 360 capture screen (also the background of the Instruction & Context screens) */
+  /* 360 capture screen — full-height layout (581:20934): no stepper, camera window between the angle rail and the
+     right column from the header down, walk arrow floating at the top, RECORDING bottom-right.
+     Also the background of the 360 Instruction screen. */
   const capHtml = (n, o = {}) => {
-    const alt = !!o.alt;
     let html = C.captureScreen({
-      stepper: alt ? null : C.steps(NUMS, n - 1),
-      cutout: alt ? { left: 128, right: 128, top: 34, height: 356, radius: 0, ring: false } : { left: 128, right: 128, top: 94, height: 274, radius: 20 },
-      badge: o.badge || STEPS[n - 1][4],
+      stepper: null,
+      cutout: { left: 128, right: 128, top: 34, height: null, radius: 0, ring: false },
+      badge: STEPS[n - 1][4],
       zoom: false,
-      overlayHtml: `${n > 1 ? moveArrow(alt ? 'alt' : '') : ''}${angles(n)}
-        <img class="minimap" src="${A('e/minimap-' + n + '.png')}" alt="">${recBadge(alt ? 'alt' : '')}`,
+      overlayHtml: `${n > 1 ? moveArrow() : ''}${angles(n)}
+        <img class="minimap" src="${A('e/minimap-' + n + '.png')}" alt="">${recBadge()}`,
       extra: o.extra || '',
     });
     html = withBack(html, n === 1 ? 'v360-instr' : stepGo(n - 1));
@@ -105,14 +106,6 @@
       id: `v360-${n}-fs`, node: fsNode, title: `360° - Step ${n} - ${name} Captured Preview`, orientation: 'landscape', className: 'fs v360-fs', rotate: 'rotate-s2',
       render: () => C.fsScreen({ key: key(n), close: `v360-${n}-captured`, fallback: photo(n) }),
     });
-  });
-
-  /* Extra variant of Step 2 capture (581:20934): full-height camera window, no stepper, badges moved */
-  App.screen({
-    id: 'v360-2-capture-alt', node: '581:20934', title: '360° - Step 2 - Front Right Capture (full-height variant)', orientation: 'landscape', className: 'capture v360 v360-cap v360-alt', rotate: 'rotate-s2',
-    vo: STEPS[1][5],
-    render: () => capHtml(2, { alt: true, badge: 'Fit the Front Right to the screen and tap on the shutter' }),
-    mount: (el) => { scrollAngles(el); return C.mountCapture(el, { key: key(2), next: afterShot(2), fallbackImg: photo(2) }); },
   });
 
   /* ---------- Damages ---------- */
