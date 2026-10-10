@@ -173,7 +173,8 @@ html:not(.framed) .prereq .prereq-fade { top: 0; }
 .a-items .row + .row { border-top: 1px solid #eee; }
 .a-items .row.req { cursor: default; }
 .a-items .txt { flex: 1 0 0; min-width: 1px; display: flex; flex-direction: column; gap: 2px; }
-.a-items .name { font: 500 14px/1.3 var(--font-secondary); color: var(--text); }
+.a-items .name { display: flex; gap: 6px; align-items: center; font: 500 14px/1.3 var(--font-secondary); color: var(--text); }
+.a-items .opt { padding: 1px 6px; border-radius: 100px; background: #e7eefc; font: 500 10px/1.4 var(--font-secondary); color: var(--heading); }
 .a-items .sub { font: 400 12px/1.3 var(--font-secondary); color: #757575; }
 .a-items input[type=checkbox] {
   appearance: none; -webkit-appearance: none; width: 20px; height: 20px; margin: 0; flex-shrink: 0; border-radius: 5px; cursor: pointer;

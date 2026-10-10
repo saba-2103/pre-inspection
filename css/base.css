@@ -88,6 +88,8 @@ html.phone-land .status-bar.device-only { display: flex !important; visibility: 
 .icon-btn .ring .track { opacity: .2; }
 .icon-btn.muted img { opacity: .35; }
 .icon-btn.muted .ring { display: none; }
+.icon-btn:disabled { opacity: .35; cursor: default; pointer-events: none; }
+.icon-btn:disabled .ring { display: none; }
 
 /* stepper */
 .stepper { display: flex; align-items: center; flex-shrink: 0; }

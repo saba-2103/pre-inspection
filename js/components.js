@@ -97,7 +97,7 @@
     // offsets are from the 850×390 design; anchor them to the centre so the window stays centred on wider/taller phones
     // with `right`, the window stretches between fixed side margins (wide phones get a wider window)
     const x = c.right != null ? `left:${c.left}px;right:${c.right}px;` : `left:calc(50% + ${c.left - 425}px);width:${c.width}px;`;
-    const cut = `${x}top:calc(50% + ${c.top - 195}px);height:${c.height}px;border-radius:${c.radius || 0}px;${c.border ? `border:${c.border};` : ''}${c.shade ? `box-shadow:0 0 0 3000px ${c.shade};` : ''}`;
+    const cut = `${x}top:calc(50% + ${c.top - 195}px);height:${c.height}px;border-radius:${c.radius || 0}px;${c.border ? `border:${c.border};` : ''}${c.shade ? `box-shadow:0 0 0 3000px ${c.shade};` : 'box-shadow:none;'}`; // no shade → no dimming at all (video screens)
     return `
       <div class="cam-slot"></div>
       <div class="cutout ${c.ring ? 'ring' : ''}" style="${cut}"></div>

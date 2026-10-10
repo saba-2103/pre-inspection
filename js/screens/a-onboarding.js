@@ -103,7 +103,7 @@
             <p class="sec-h">${sec}</p>
             <div class="rows">${list.map((it) => `
               <label class="row ${it.key ? '' : 'req'}">
-                <div class="txt"><p class="name">${esc(it.name)}</p><p class="sub">${esc(it.key ? it.sub : it.sub + ' · Required')}</p></div>
+                <div class="txt"><p class="name">${esc(it.name)}${it.key ? '<span class="opt">Optional</span>' : ''}</p><p class="sub">${esc(it.key ? it.sub : it.sub + ' · Required')}</p></div>
                 <input type="checkbox" ${it.key ? `data-item="${it.key}" ${C.has(it.key) ? 'checked' : ''}` : 'checked disabled'} aria-label="${esc(it.name)}">
               </label>`).join('')}
             </div>

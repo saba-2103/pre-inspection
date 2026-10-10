@@ -105,6 +105,8 @@
     App.cleanup = shown.mount ? shown.mount(el, ctx) || null : null;
     const vo = typeof shown.vo === 'function' ? shown.vo(ctx) : shown.vo;
     if (vo) App.VO.speak(vo); else App.VO.stop();
+    // screens without a voice-over: replay / mute buttons shown disabled
+    el.querySelectorAll('[data-action^="vo-"]').forEach((b) => { b.disabled = !vo; });
     App.VO.bind(el);
     document.body.style.background = framed ? '' : getComputedStyle(el).backgroundColor;
   }
