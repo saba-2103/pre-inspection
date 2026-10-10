@@ -223,8 +223,8 @@
         </div>
       </div>`;
   }
-  const Open = { v360: null, damages: null }; // null = follow the design default
-  const isOpen = (m, g) => (Open[g] != null ? Open[g] : g === 'v360' && m.state === 'uploading');
+  const Open = { v360: false, damages: false }; // groups start collapsed; tapping toggles
+  const isOpen = (m, g) => Open[g];
 
   const section = (title, html, cls = '') => `
     <div class="section ${cls}">
@@ -505,7 +505,7 @@
     orientation: 'portrait',
     className: 'f-success',
     rotate: 'rotate-review',
-    vo: `"Done! Your inspection is submitted. We'll update you soon. Thank you."`,
+    vo: `"Your inspection has been submitted successfully. We'll update you soon. Thank you."`,
     render: () => `
       <div class="fade"></div>
       ${C.header({ ctas: false, extraClass: 'center' })}

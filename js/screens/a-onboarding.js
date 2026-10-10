@@ -75,48 +75,41 @@
     mount: (el) => { const chat = el.querySelector('.wa-chat'); chat.scrollTop = chat.scrollHeight; },
   });
 
-  /* ---------- Inspection items (not in Figma): mandatory items locked on, optional flows can be switched off.
-     The rest of the flow follows this (App.state.items / C.has); Engine Sound is the only reason to open the bonnet. ---------- */
+  /* ---------- Inspection items — INTERNAL demo setup (not in Figma, not customer-facing; no VO).
+     Mandatory items locked on, optional flows can be switched off. The rest of the flow follows this
+     (App.state.items / C.has); Engine Sound is the only reason to open the bonnet. ---------- */
   const ITEMS = [
     ['Interior', [
-      { name: 'RC', sub: 'Photo · card or paper', img: 'b/ag-rc.png' },
-      { name: 'Odometer Reading', sub: 'Photo', img: 'b/ag-odo.png' },
-      { key: 'windshield', name: 'Windshield', sub: 'Video', img: 'b/ag-ws.png' },
-      { key: 'roof', name: 'Rooftop Glass', sub: 'Video', img: 'b/ag-roof.png' },
+      { name: 'RC', sub: 'Photo · card or paper' },
+      { name: 'Odometer Reading', sub: 'Photo' },
+      { key: 'windshield', name: 'Windshield', sub: 'Video' },
+      { key: 'roof', name: 'Rooftop Glass', sub: 'Video' },
     ]],
     ['Exterior', [
-      { key: 'vin', name: 'VIN', sub: 'Photo', img: 'b/ag-vin.png' },
-      { key: 'engine', name: 'Engine Sound', sub: 'Video · needs the bonnet open', img: 'b/ag-engine.png' },
-      { name: '360° Walkaround', sub: 'Video', img: 'b/ag-360.png' },
-      { name: 'Damages', sub: 'Photos', img: 'e/dmg-sample.jpg' },
+      { key: 'vin', name: 'VIN', sub: 'Photo' },
+      { key: 'engine', name: 'Engine Sound', sub: 'Video · adds open / close bonnet steps' },
+      { name: '360° Walkaround', sub: 'Video' },
+      { name: 'Damages', sub: 'Photos' },
     ]],
   ];
   App.screen({
-    id: 'items', title: 'Inspection Items', orientation: 'portrait', className: 'a-items', scroll: true,
-    vo: '"Choose what to capture. Required items are already selected. Tap Continue when ready."',
+    id: 'items', title: 'Inspection Items (internal setup)', orientation: 'portrait', className: 'a-items', scroll: true,
     render: () => `
-      ${C.header({})}
+      ${C.header({ ctas: false })}
       <div class="body">
-        <div class="title-block">
-          <p class="h">Inspection Items</p>
-          <p class="s">Required items are always included. Untick any optional item you don’t want to capture.</p>
-        </div>
+        <p class="internal">Internal · Demo setup — not shown to customers</p>
         ${ITEMS.map(([sec, list]) => `
           <div class="sec">
             <p class="sec-h">${sec}</p>
-            ${list.map((it) => `
-              <label class="item ${it.key ? '' : 'req'}">
-                <div class="thumb"><img src="${A(it.img)}" alt=""></div>
-                <div class="txt">
-                  <p class="name">${esc(it.name)}</p>
-                  <p class="sub">${esc(it.sub)}</p>
-                  <span class="tag">${it.key ? 'Optional' : 'Required'}</span>
-                </div>
+            <div class="rows">${list.map((it) => `
+              <label class="row ${it.key ? '' : 'req'}">
+                <div class="txt"><p class="name">${esc(it.name)}</p><p class="sub">${esc(it.key ? it.sub : it.sub + ' · Required')}</p></div>
                 <input type="checkbox" ${it.key ? `data-item="${it.key}" ${C.has(it.key) ? 'checked' : ''}` : 'checked disabled'} aria-label="${esc(it.name)}">
               </label>`).join('')}
+            </div>
           </div>`).join('')}
       </div>
-      <div class="foot">${C.footer({ buttons: [{ label: 'Continue', go: 'loading' }] })}</div>`,
+      <div class="foot">${C.footer({ buttons: [{ label: 'Start Demo', go: 'loading' }] })}</div>`,
     mount: (el) => {
       el.addEventListener('change', (e) => {
         const k = e.target.dataset.item;

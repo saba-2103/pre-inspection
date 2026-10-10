@@ -134,7 +134,7 @@ html.phone-land .status-bar.device-only { display: flex !important; visibility: 
 .zoom button { padding: 6px 10px; border-radius: 99px; font: 600 14px/normal var(--font-secondary); color: var(--brand-light); text-align: center; }
 .zoom button.on { background: var(--brand-light); color: var(--brand-dark); }
 .info-badge {
-  position: absolute; left: 50%; bottom: 40px; transform: translateX(-50%); z-index: 4;
+  position: absolute; left: 50%; bottom: calc(50% - 155px); transform: translateX(-50%); z-index: 4;
   background: rgba(33,37,41,.7); padding: 4px 10px; border-radius: 30px; display: flex; gap: 4px; align-items: center;
   font: 500 11px/1.2 'Inter', sans-serif; color: #fff; white-space: nowrap;
 }

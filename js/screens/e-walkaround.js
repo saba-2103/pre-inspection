@@ -32,9 +32,11 @@
   const angles = (cur) => `
     <div class="ang-list" data-scroll="${SCROLL[cur - 1]}"><div class="ang-col">${LABELS.map((label, i) => {
       const n = i + 1;
-      const st = n < cur ? 'done' : n === cur ? 'current' : 'todo';
-      const head = st === 'done' ? `<img class="ck" src="${A('e/check.svg')}" alt="">` : `<span class="num">${n}</span>`;
-      const img = st === 'done' ? `<img class="ph" src="${thumbOf(n)}" alt="">` : `<img src="${A('e/thumb-' + n + '.png')}" alt="">`;
+      // any captured angle (incl. the current one on its preview, or later ones after Back) shows its photo + check
+      const shot = n < cur || !!App.capture(key(n));
+      const st = n === cur ? 'current' : shot ? 'done' : 'todo';
+      const head = shot ? `<img class="ck" src="${A('e/check.svg')}" alt="">` : `<span class="num">${n}</span>`;
+      const img = shot ? `<img class="ph" src="${thumbOf(n)}" alt="">` : `<img src="${A('e/thumb-' + n + '.png')}" alt="">`;
       return `<div class="ang ${st}"><div class="ang-h">${head}<p>${esc(label)}</p></div><div class="ang-img">${img}</div></div>`;
     }).join('')}</div></div>`;
 
@@ -48,7 +50,7 @@
     const alt = !!o.alt;
     let html = C.captureScreen({
       stepper: alt ? null : C.steps(NUMS, n - 1),
-      cutout: alt ? { left: 128, top: 34, width: 594, height: 356, radius: 0, ring: false } : { left: 128, top: 94, width: 594, height: 274, radius: 20 },
+      cutout: alt ? { left: 128, right: 128, top: 34, height: 356, radius: 0, ring: false } : { left: 128, right: 128, top: 94, height: 274, radius: 20 },
       badge: o.badge || STEPS[n - 1][4],
       zoom: false,
       overlayHtml: `${n > 1 ? moveArrow(alt ? 'alt' : '') : ''}${angles(n)}
@@ -120,7 +122,7 @@
     const thumb = last ? `<img src="${last.url}" alt="">` : o.sample ? `<img src="${A('e/dmg-sample.jpg')}" alt="">` : '';
     return C.captureScreen({
       stepper: C.stageSteps(2, 'Damages'),
-      cutout: { left: 20, top: 94, width: 702, height: 274, radius: 20 },
+      cutout: { left: 20, right: 128, top: 94, height: 274, radius: 20 },
       badge: 'Fit the Damages in frame and tap on the shutter',
       zoom: false,
       overlayHtml: `

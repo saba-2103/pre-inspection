@@ -13,7 +13,7 @@
   font: 500 14px/1.25 var(--font-primary); color: var(--brand-light); white-space: nowrap;
 }
 .d-vid .rec-timer[hidden], .d-vid .countdown[hidden] { display: none; }
-.d-vid .countdown { position: absolute; left: 365px; top: calc(50% + var(--status-h) / 2 - 74px); width: 90px; height: 150px; z-index: 4; pointer-events: none; }
+.d-vid .countdown { position: absolute; left: calc(50% - 45px); top: calc(50% + var(--status-h) / 2 - 74px); width: 90px; height: 150px; z-index: 4; pointer-events: none; }
 .d-vid .countdown p { font: 600 150px/1 var(--font-primary); color: #fff; text-align: center; width: 90px; }
 
 /* Video Modals (343:35019) */
