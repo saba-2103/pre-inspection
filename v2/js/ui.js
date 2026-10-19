@@ -1,11 +1,14 @@
-/* V2 shared UI: page chrome, buttons, the landscape camera screen (live checks, torch, example, captions, toast),
-   video recorder (min-length ring, pace path) and the photo verdict. */
+/* V2 shared UI (Anaira design system, Figma 669:30753): page chrome, logo, voice button, sheets and modals,
+   the landscape camera screen (stepper header, capture window with live checks, shutter rail, countdown + timer
+   for videos, zoom) and the capture review panel. */
 (function () {
   const A = App.asset;
   const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const U = (window.U = { A, esc });
+  const I = (f) => A('ui/' + f);
+  U.I = I;
 
-  /* ---------- portrait chrome (status + browser bar shown in the desktop phone frame only) ---------- */
+  /* ---------- device chrome (desktop phone frame only) ---------- */
   U.status = () => `<div class="sbar device-only"><span>08:15</span><img src="${A('core/statusIcons.svg')}" alt=""></div>`;
   U.browser = () => `
     <div class="bbar device-only">
@@ -13,72 +16,77 @@
       <div class="addr"><img src="${A('core/chromeSite.svg')}" alt=""><span>acmeinsurance.in<i>/pre-inspection/</i></span></div>
       <img src="${A('core/chromePlus.svg')}" alt=""><img src="${A('core/chromeTabs.svg')}" alt=""><img src="${A('core/chromeMore.svg')}" alt="">
     </div>`;
-  U.top = (right = '') => `<div class="ptop"><img class="logo" src="${A('core/logo.svg')}" alt="ACME">${right}</div>`;
-  U.pill = (t) => `<span class="stage-pill">${esc(t)}</span>`;
-  U.head = (h, s) => `<div class="phead"><p class="h">${h}</p>${s ? `<p class="s">${s}</p>` : ''}</div>`;
-  U.btn = (label, attrs = '', cls = '') => `<button class="btn ${cls}" ${attrs}>${label}</button>`;
+  U.home = () => '<i class="homebar device-only"></i>';
 
-  /* ---------- toast (shown on the next capture screen after a save) ---------- */
-  U.toast = (t) => {
-    if (!t) return '';
-    const st = App.state;
-    const img = t.img ? `<img src="${t.img}" alt="">` : '';
-    return `<div class="toast" data-toast>
-      <div class="t-img">${img}</div>
-      <div class="t-txt"><p class="t-h"><i><img src="${A('cam/toast-check.svg')}" alt=""></i>${esc(t.title)}</p><p class="t-s">${esc(t.sub || '')}</p></div>
-      ${t.undo ? `<button class="t-undo" data-action="undo"><img src="${A('cam/undo.svg')}" alt="">Undo</button>` : ''}
-    </div>`;
+  /* ---------- brand + header ---------- */
+  U.logo = (white) => `<span class="logo ${white ? 'w' : ''}"><img class="mk" src="${I(white ? 'logo-mark-w.svg' : 'logo-mark.svg')}" alt=""><img class="wd" src="${I(white ? 'logo-word-w.svg' : 'logo-word.svg')}" alt="anaira"></span>`;
+  U.vo = () => `<button class="vo-btn" data-action="vo-toggle" aria-label="Voice guide"><img src="${I('volume.svg')}" alt="">
+    <svg viewBox="0 0 40 40"><circle class="trk" cx="20" cy="20" r="19"/><circle class="bar" cx="20" cy="20" r="19"/></svg></button>`;
+  U.nav = (right = U.vo(), cls = '') => `<div class="nav ${cls}">${U.logo()}${right}</div>`;
+  U.title = (h, s) => `<div class="ptitle"><p class="h">${h}</p>${s ? `<p class="s">${s}</p>` : ''}</div>`;
+  // portrait page: chrome + nav + body + action bar
+  U.page = ({ body, foot = '', nav = U.nav(), bodyCls = '' }) => `${U.status()}${U.browser()}${nav}
+    <div class="pg-body ${bodyCls}">${body}</div>
+    <div class="abar">${foot}${U.home()}</div>`;
+  U.foot = (btn, info) => `<div class="stack"><div class="foot">${btn}</div>${info ? `<p class="info-line">${info}</p>` : ''}</div>`;
+
+  /* ---------- overlays ---------- */
+  U.sheet = ({ title, body = '', note = "Tap I'm Ready when done", btn = 'I’m Ready', attrs = 'data-action="sheet-next"', cls = '' }) => `
+    <div class="ov"><div class="sheet ${cls}"><i class="handle"></i><p class="st">${title}</p>${body}
+      <div class="cta">${note ? `<p>${note}</p>` : ''}<button class="btn full" ${attrs}>${btn}</button></div></div></div>`;
+  U.lmodal = ({ title, sub, body = '', foot, pic, pan, cls = '' }) => `
+    <div class="ov"><div class="lmodal ${pic ? 'pic' : ''} ${pan ? 'pan' : ''} ${cls}">
+      ${pic ? `<div class="bg"><img src="${pic}" alt=""></div>` : ''}
+      ${sub ? `<div style="display:flex;flex-direction:column;gap:4px;width:100%"><p class="mt">${title}</p><p class="ms">${sub}</p></div>` : `<p class="mt">${title}</p>`}
+      ${body}${foot}</div></div>`;
+  U.snack = (el, text) => {
+    const s = document.createElement('div');
+    s.className = 'snack'; s.textContent = text;
+    el.appendChild(s);
+    setTimeout(() => s.remove(), 2600);
   };
-  U.setToast = (t) => { App.state.toast = t; };
-  U.takeToast = () => { const t = App.state.toast; App.state.toast = null; App.state.lastToast = t; return t; };
+
+  /* ---------- stepper (Stepper 669:33512): done · current · to do ---------- */
+  U.stepper = (items, curKey) => {
+    const ci = items.findIndex((x) => x.key === curKey);
+    return `<div class="stepper">${items.map((x, i) => {
+      const s = i < ci || (ci < 0 && x.done) ? 'done' : i === ci ? 'cur' : 'todo';
+      return `${i ? '<i class="dv"></i>' : ''}<span class="si ${s}"><img src="${A('cam2/st-' + s + '.svg')}" alt="">${esc(x.step)}</span>`;
+    }).join('')}</div>`;
+  };
+  U.camNav = ({ items, cur, light, left }) => `<div class="cnav ${light ? 'light' : ''}">${left != null ? left : U.logo(true)}${items ? U.stepper(items, cur) : ''}${U.vo()}</div>`;
 
   /* ---------- landscape camera screen ----------
-     o = { pill:{label,i,n} | pillHtml, win:'wide'|'card', target:{l,t,w,h,label}, hint:{text,icon}, live:{ok:'text'},
-           shutter:'photo'|'video', example:img, ring:html, topLeft:html, extra:html, toast } */
+     o = { items, cur, win: 'rc'|'odo'|'vin', badge, shutter: 'photo'|'video', railCls, railTop, railBottom, zoom, extra, navLeft } */
   U.cam = (o) => {
-    const pill = o.pillHtml || (o.pill ? `<div class="cpill"><p>${esc(o.pill.label)} · ${o.pill.i} of ${o.pill.n}</p><i><b style="width:${(o.pill.i / o.pill.n) * 100}%"></b></i></div>` : '');
-    const tgt = o.target ? `<div class="target" style="left:${o.target.l}%;top:${o.target.t}%;width:${o.target.w}%;height:${o.target.h}%"><span>${esc(o.target.label)}</span></div>` : '';
-    const right = o.shutter === 'video'
-      ? `<button class="shutter vid" data-action="shutter" aria-label="Record"><svg class="ring" viewBox="0 0 80 80"><circle cx="40" cy="40" r="38" class="trk"/><circle cx="40" cy="40" r="38" class="bar" pathLength="100" style="stroke-dasharray:0 100"/></svg><i></i></button>
-         <div class="vtime"><b>0:00</b><span>min 0:${String(o.min || 10).padStart(2, '0')}</span></div>`
+    const shutter = o.shutter === 'video'
+      ? `<span class="rtimer">0:00</span><button class="shutter rec" data-action="shutter" aria-label="Record"><i></i></button>`
       : `<button class="shutter" data-action="shutter" aria-label="Capture"><i></i></button>`;
     return `
       <div class="cam-slot"></div>
-      <div class="shade win-${o.win || 'wide'}"><div class="win" data-win>${tgt}<i class="c tl"></i><i class="c tr"></i><i class="c bl"></i><i class="c br"></i></div></div>
+      ${o.win ? `<div class="win w-${o.win}" data-win><i class="c tl"></i><i class="c tr"></i><i class="c bl"></i><i class="c br"></i></div>` : ''}
       ${U.status()}
-      <button class="cbtn close" data-action="close" aria-label="Close"><img src="${A('cam/close.svg')}" alt=""></button>
-      ${o.topLeft || ''}
-      ${pill}
-      <div class="cright">
-        <button class="wbtn" data-action="cc-toggle" aria-label="Captions"><img src="${A('cam/cc.svg')}" alt=""></button>
-        <button class="wbtn" data-action="vo-toggle" aria-label="Voice"><img src="${A('cam/speaker.svg')}" alt=""></button>
-      </div>
-      ${o.ring || `<button class="cbtn torch" data-action="torch" aria-label="Torch"><img src="${A('cam/torch.svg')}" alt=""></button>`}
-      ${right}
-      ${o.example ? `<button class="example" data-action="example" aria-label="Example"><img src="${o.example}" alt=""><span>Example</span></button>` : ''}
-      <div class="hint" data-hint>${U.hintHtml(o.hint)}</div>
-      ${o.extra || ''}
-      ${U.toast(o.toast)}
-      <div class="caption win-${o.win || 'wide'}"><img src="${A('cam/cap-speaker.svg')}" alt=""><p data-caption></p></div>
-      ${o.example ? `<div class="ex-pop" hidden><img src="${o.example}" alt=""><p>Example · tap to close</p></div>` : ''}`;
+      ${U.camNav({ items: o.items, cur: o.cur, left: o.navLeft })}
+      <div class="live" data-live><img src="${I('alert-16-dark.svg')}" alt=""><span></span></div>
+      ${o.shutter === 'video' ? '<p class="countdown" data-count>3</p>' : ''}
+      <div class="rail ${o.railCls || ''}">${o.railTop || ''}${shutter}${o.railBottom || ''}</div>
+      ${o.zoom ? `<div class="zoom">${[1, 2, 3].map((z) => `<button data-zoom="${z}" class="${z === 1 ? 'on' : ''}">${z}x</button>`).join('')}</div>` : ''}
+      ${o.badge ? `<p class="ibadge" data-badge>${esc(o.badge)}</p>` : ''}
+      ${o.extra || ''}`;
   };
-  const ICON = { info: 'cam/hint-info.svg', ok: 'cam/ok-check.svg', warn: 'cam/warn-dark.svg', walk: 'cam/walk-ic.svg' };
-  U.hintHtml = (h) => (h ? `<span class="hp ${h.kind || 'info'}"><img src="${A(ICON[h.icon || h.kind] || ICON.info)}" alt="">${esc(h.text)}</span>` : '');
 
-  /* Live judgment on the frame: corners + hint go amber (dark / shaky) or green (sharp, lit) as the camera moves. */
-  function liveChecks(el, o) {
-    const win = el.querySelector('.shade');
-    const hint = el.querySelector('[data-hint]');
-    let last = null, streak = 0, iv = 0;
-    const set = (state) => {
-      win.dataset.state = state;
-      if (o.lockHint && o.lockHint()) return;
-      const h = state === 'ok' ? { kind: 'ok', text: o.live.ok } : state === 'dark' ? { kind: 'warn', text: Camera.canTorch() ? 'Too dark · torch turned on, hold still' : 'Too dark · find more light' }
-        : state === 'blurry' ? { kind: 'warn', text: 'Hold still · the picture is blurry' } : o.hint;
-      hint.innerHTML = U.hintHtml(h);
-      if (state === 'dark' && Camera.canTorch() && !Camera.torchOn) { Camera.torch(true); el.querySelector('[data-action="torch"]')?.classList.add('on'); }
-    };
+  /* Live judgment on the frame: corners go amber (dark / shaky) or green (sharp, lit); an amber pill says why. */
+  function liveChecks(el) {
+    const win = el.querySelector('[data-win]');
+    const pill = el.querySelector('[data-live]');
     const Camera = App.Camera;
+    let last = null, streak = 0;
+    const set = (state) => {
+      if (win) win.dataset.state = state;
+      const msg = state === 'dark' ? (Camera.canTorch() ? 'Too dark · torch turned on, hold still' : 'Too dark · find more light') : state === 'blurry' ? 'Hold still · the picture is blurry' : '';
+      if (pill && el.dataset.rec !== 'on') { pill.classList.toggle('on', !!msg); pill.querySelector('span').textContent = msg; }
+      if (state === 'dark' && Camera.canTorch() && !Camera.torchOn) Camera.torch(true);
+    };
     const tick = () => {
       const s = Camera.source;
       if (!s) return;
@@ -89,30 +97,27 @@
       if (state === last) streak++; else { last = state; streak = 1; }
       if (streak === 2 || (state === 'ok' && streak === 3)) set(state);
     };
-    iv = setInterval(tick, 400);
+    const iv = setInterval(tick, 400);
     return () => clearInterval(iv);
   }
 
-  /* Mount a camera screen. o = { key, fallback, live, hint, onShot(cap, el) | video:{min, max, onDone(cap)} , lockHint } */
+  /* Mount a camera screen. o = { fallback, crop, live, onShot(cap, el) | video: { min, max, onDone(cap), during }, onAction(act, el) } */
   U.mountCam = (el, o) => {
     const slot = el.querySelector('.cam-slot');
     const offs = [];
-    App.Camera.attach(slot, { fallbackImg: o.fallback, crop: o.fallbackCrop }).then(() => { if (o.live) offs.push(liveChecks(el, o)); });
-    const t = el.querySelector('[data-toast]');
-    if (t) { const tm = setTimeout(() => t.classList.add('out'), 3500); offs.push(() => clearTimeout(tm)); }
+    App.Camera.attach(slot, { fallbackImg: o.fallback, crop: o.crop }).then(() => { if (o.live !== false) offs.push(liveChecks(el)); });
     el.addEventListener('click', async (e) => {
-      const a = e.target.closest('[data-action]');
-      if (!a) {
-        if (e.target.closest('.ex-pop')) el.querySelector('.ex-pop').hidden = true;
+      const z = e.target.closest('[data-zoom]');
+      if (z) {
+        el.querySelectorAll('[data-zoom]').forEach((b) => b.classList.toggle('on', b === z));
+        App.Camera.setZoom(slot, +z.dataset.zoom);
         return;
       }
+      const a = e.target.closest('[data-action]');
+      if (!a) return;
       const act = a.dataset.action;
-      if (act === 'close') App.go(o.exit || 'inside');
-      else if (act === 'torch') { const on = await App.Camera.torch(!App.Camera.torchOn); a.classList.toggle('on', on); }
-      else if (act === 'example') el.querySelector('.ex-pop').hidden = false;
-      else if (act === 'undo') { const u = (App.state.lastToast || {}).undo; if (u) { u.drop && u.drop(); App.go(u.go); } }
-      else if (act === 'shutter' && !o.video) {
-        if (el.dataset.busy) return;
+      if (act === 'shutter' && !o.video) {
+        if (el.dataset.busy || el.querySelector('.ov')) return;
         el.dataset.busy = 1;
         try {
           flash(el);
@@ -120,7 +125,7 @@
           o.onShot(cap, el);
         } catch (err) { console.warn(err); }
         delete el.dataset.busy;
-      }
+      } else if (o.onAction) o.onAction(act, el, a);
     });
     if (o.video) offs.push(recorder(el, o));
     return () => { offs.forEach((f) => f && f()); App.Camera.torch(false); if (App.Camera.video) App.Camera.video.remove(); };
@@ -132,29 +137,37 @@
     requestAnimationFrame(() => requestAnimationFrame(() => (f.style.opacity = '0')));
     setTimeout(() => f.remove(), 300);
   }
+  const fmt = (s) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
+  U.fmt = fmt;
 
-  /* Video: no countdown. Red REC timer, ring fills to the minimum length before Stop unlocks, pace dot along the path. */
+  /* Video (Windshield · Record 741:59757 → Countdown 669:31371 → Recording 669:31377): tap Record → 3-2-1 →
+     red timer above the stop button; Stop works once the minimum length is reached. */
   function recorder(el, o) {
-    const v = o.video, min = App.fast ? 3 : v.min || 10, max = v.max || 45;
-    const btn = el.querySelector('.shutter'), bar = btn.querySelector('.bar'), time = el.querySelector('.vtime b');
-    const pace = el.querySelector('.pace'), dot = pace && pace.querySelector('.dot'), done = pace && pace.querySelector('.done');
-    let t0 = 0, iv = 0, sample = false, dead = false;
-    const fmt = (s) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
+    const v = o.video, min = App.fast ? 3 : v.min || 10, max = v.max || 60;
+    const btn = el.querySelector('.shutter'), time = el.querySelector('.rtimer'), count = el.querySelector('[data-count]');
+    let t0 = 0, iv = 0, ct = 0, sample = false, dead = false;
     const tick = () => {
       const s = (Date.now() - t0) / 1000;
       time.textContent = fmt(s);
-      el.querySelector('.rec-pill b').textContent = `REC ${fmt(s)}`;
-      bar.style.strokeDasharray = `${Math.min(100, (s / min) * 100)} 100`;
-      btn.classList.toggle('locked', s < min);
-      if (pace) { const p = Math.min(1, s / min); dot.style.left = done.style.width = `calc((100% - 30px) * ${p})`; }
+      btn.classList.toggle('wait', s < min);
       if (s >= max) stop();
     };
-    const start = async () => {
-      App.VO.stop();
-      el.dataset.rec = 'on';
-      if (v.onStart) v.onStart(el);
-      try { App.Camera.startRecording(); sample = false; } catch (e) { sample = true; } // no camera: timed sample clip
-      t0 = Date.now(); tick(); iv = setInterval(tick, 200);
+    const start = () => {
+      el.dataset.rec = 'count';
+      let n = 3;
+      count.textContent = n;
+      ct = setInterval(() => {
+        n -= 1;
+        if (n > 0) { count.textContent = n; return; }
+        clearInterval(ct);
+        if (dead) return;
+        el.dataset.rec = 'on';
+        if (v.during) App.VO.speak(v.during);
+        const b = el.querySelector('[data-badge]');
+        if (b && v.badgeOn) b.textContent = v.badgeOn;
+        try { App.Camera.startRecording(); sample = false; } catch (e) { sample = true; } // no camera: timed sample clip
+        t0 = Date.now(); tick(); iv = setInterval(tick, 200);
+      }, 1000);
     };
     const stop = async () => {
       if (el.dataset.rec !== 'on') return;
@@ -167,48 +180,122 @@
       if (!dead) v.onDone(cap);
     };
     const click = (e) => {
-      if (!e.target.closest('[data-action="shutter"]')) return;
+      if (!e.target.closest('[data-action="shutter"]') || el.querySelector('.ov')) return;
       if (el.dataset.rec === 'on') { if ((Date.now() - t0) / 1000 >= min) stop(); }
-      else if (!el.dataset.rec) start();
+      else if (!el.dataset.rec) { App.VO.stop(); start(); }
     };
     el.addEventListener('click', click);
-    return () => { dead = true; clearInterval(iv); if (App.Camera.isRecording()) App.Camera.stopRecording(); };
+    return () => { dead = true; clearInterval(iv); clearInterval(ct); if (App.Camera.isRecording()) App.Camera.stopRecording(); };
   }
 
-  /* ---------- verdict (after a photo) ---------- */
-  // o = { label:'Odometer · 3 of 5', cap, ask:'Can you read …', box:{l,t,w,h} (%), onUse, onRetake }
+  /* small still for posters: the current camera frame, or the screen's sample still */
+  U.thumb = (fallback) => {
+    try {
+      const f = App.Camera.frame();
+      if (f && App.Camera.source === App.Camera.video) {
+        const c = document.createElement('canvas'); c.width = 320; c.height = Math.round((f.height / f.width) * 320);
+        c.getContext('2d').drawImage(f, 0, 0, c.width, c.height);
+        return c.toDataURL('image/jpeg', 0.75);
+      }
+    } catch (e) {}
+    return fallback;
+  };
+
+  /* ---------- capture review panel (Captured 678:65329 · Error 743:74582 · Too dark 678:65703 · Recorded 731:56574)
+     o = { label, cap, fallback, poster, ask, chips:[a,b], mode: 'good'|'retake'|'skip'|'anyway' } */
   U.verdict = (o) => {
     const q = (o.cap && o.cap.quality) || { ok: true };
-    const bad = q.ok === false;
-    const chip = (ok, t) => `<span class="vchip ${ok ? 'ok' : 'bad'}">${ok ? '✓' : '✕'} ${t}</span>`;
+    const video = o.cap && o.cap.kind === 'video';
+    const bad = !video && q.ok === false;
+    const mode = bad ? o.mode || 'anyway' : 'good';
+    const src = o.cap ? (video ? o.poster : o.cap.url) : o.fallback;
+    const chip = (ok, t) => `<span class="chip ${ok ? 'ok' : 'bad'}">${ok ? '✓' : '✕'} ${t}</span>`;
+    const [c1, c2] = o.chips || (video ? ['Steady', 'Well lit'] : ['Sharp', 'Well lit']);
     const head = bad
-      ? `<i class="vic warn">!</i><p>${q.dark ? 'Too dark' : 'A bit blurry'}</p>`
-      : `<i class="vic ok"><img src="${A('cam/verdict-check.svg')}" alt=""></i><p>Clear and readable</p>`;
-    const tip = bad ? (q.dark ? 'Turn on the torch or find more light, then capture again.' : 'Hold still for a second, then capture again.') : o.ask;
+      ? `<i class="warn">!</i><p>${q.dark ? 'Bad lighting, too dark' : 'A bit blurry'}</p>`
+      : `<i><img src="${I('check-16-w.svg')}" alt=""></i><p>Completed</p>`;
+    const tip = !bad ? `<p class="tip"><img src="${I('info-12.svg')}" alt="">${esc(o.ask)}</p>`
+      : mode === 'anyway' ? `<p class="tip"><img src="${I('info-12.svg')}" alt="">${q.dark ? 'Turn on the torch or find better light, then retake.' : 'Hold still for a second, then retake.'}</p>`
+        : `<p class="tip err"><img src="${I('alert-16-red.svg')}" alt="">${q.dark ? 'Find better light, then retake.' : 'Hold still for a second, then retake.'}</p>`;
+    const btns = {
+      good: `<button class="btn sec" data-action="retake">Retake</button><button class="btn flex" data-action="use">${video ? 'Use video' : 'Use photo'}</button>`,
+      retake: `<button class="btn flex" data-action="retake">Retake</button>`,
+      skip: `<button class="btn sec flex" data-action="retake">Retake</button><button class="btn grey" data-action="skip">Skip</button>`,
+      anyway: `<button class="btn sec" data-action="use">Use anyway</button><button class="btn flex" data-action="retake">Retake</button>`,
+    }[mode];
     return `
       ${U.status()}
-      <div class="vphoto ${bad && q.blurry ? 'soft' : ''}"><img src="${o.cap ? o.cap.url : o.fallback}" alt="">
-        ${!bad && o.box ? `<i class="vbox" style="left:${o.box.l}%;top:${o.box.t}%;width:${o.box.w}%;height:${o.box.h}%"></i>` : ''}
-        <button class="vfull" data-action="full" aria-label="Full screen"><img src="${A('cam/fullscreen.svg')}" alt=""></button></div>
-      <div class="vpanel">
-        <p class="vlabel">${esc(o.label)}</p>
-        <div class="vhead">${head}</div>
-        <div class="vchips">${chip(true, 'In frame')}${chip(!q.blurry, 'Sharp')}${chip(!q.dark, 'Well lit')}</div>
-        <div class="vtip">${esc(tip)}</div>
-        <div class="vbtns">${bad
-          ? `<button class="btn ghost" data-action="use">Use anyway</button><button class="btn" data-action="retake">Retake</button>`
-          : `<button class="btn ghost" data-action="retake"><img src="${A('cam/retake.svg')}" alt="">Retake</button><button class="btn" data-action="use">Use photo</button>`}</div>
-      </div>
-      <div class="vfs" hidden><img src="${o.cap ? o.cap.url : o.fallback}" alt=""></div>`;
+      <div class="vrow">
+        <div class="vimg ${bad && q.dark ? 'dark' : ''} ${bad && q.blurry && !q.dark ? 'soft' : ''}">
+          <img src="${src}" alt="">
+          <button class="max" data-action="full" aria-label="Full screen"><img src="${I('maximize.svg')}" alt=""></button>
+          ${video ? `<div class="player"><button data-action="play" aria-label="Play"><img src="${I('pause-16.svg')}" alt=""></button><i class="pb"><i data-pb></i></i><span data-pt>0:00/${fmt(o.cap.duration || 0)}</span></div>` : ''}
+        </div>
+        <div class="vside">
+          <div class="top"><p class="lab">${esc(o.label)}</p><div class="head">${head}</div>
+            <div class="chips">${chip(!(bad && q.blurry && !q.dark), c1)}${chip(!(bad && q.dark), c2)}</div></div>
+          <div class="bot">${tip}<div class="row">${btns}</div></div>
+        </div>
+      </div>`;
+  };
+  U.verdictVO = (o) => {
+    const q = (o.cap && o.cap.quality) || { ok: true };
+    if (o.cap && o.cap.kind === 'video') return 'Looks good. Tap Use video.';
+    if (q.ok !== false) return 'Looks good. Tap Use photo.';
+    if (q.dark) return "It's too dark. Turn on the torch or find better light, then tap Retake.";
+    return o.mode === 'skip' ? 'That photo is blurry. Tap Retake, or Skip to continue.' : 'That photo is blurry. Hold still and tap Retake.';
   };
   U.mountVerdict = (el, o) => {
+    const cap = o.cap;
+    // recorded video: a looping (muted) preview with a progress bar; sample clips animate the bar over their length
+    let iv = 0;
+    if (cap && cap.kind === 'video') {
+      const img = el.querySelector('.vimg > img');
+      let vid = null;
+      if (!cap.sample && cap.url) {
+        vid = document.createElement('video');
+        Object.assign(vid, { src: cap.url, muted: true, loop: true, playsInline: true, autoplay: true });
+        img.replaceWith(vid);
+        vid.play().catch(() => {});
+      }
+      const dur = cap.duration || 10, t0 = Date.now();
+      let paused = false, pAt = 0;
+      iv = setInterval(() => {
+        const t = vid ? vid.currentTime : paused ? pAt : ((Date.now() - t0) / 1000) % dur;
+        el.querySelector('[data-pb]').style.width = `${(t / dur) * 100}%`;
+        el.querySelector('[data-pt]').textContent = `${fmt(t)}/${fmt(dur)}`;
+      }, 250);
+      el.querySelector('[data-action="play"]').addEventListener('click', (e) => {
+        e.stopPropagation();
+        paused = !paused; pAt = ((Date.now() - t0) / 1000) % dur;
+        if (vid) (paused ? vid.pause() : vid.play());
+        e.currentTarget.querySelector('img').src = I(paused ? 'play-20-w.svg' : 'pause-16.svg');
+      });
+    }
     el.addEventListener('click', (e) => {
       const a = e.target.closest('[data-action]');
-      if (e.target.closest('.vfs')) { el.querySelector('.vfs').hidden = true; return; }
       if (!a) return;
-      if (a.dataset.action === 'full') el.querySelector('.vfs').hidden = false;
-      if (a.dataset.action === 'use') o.onUse();
-      if (a.dataset.action === 'retake') o.onRetake();
+      const act = a.dataset.action;
+      if (act === 'full') U.fullscreen(el, { cap, src: el.querySelector('.vimg > img, .vimg > video').src, label: o.fsLabel });
+      if (act === 'use') o.onUse();
+      if (act === 'retake') o.onRetake();
+      if (act === 'skip') o.onSkip && o.onSkip();
     });
+    return () => clearInterval(iv);
+  };
+
+  /* full-screen preview (Captured Preview 669:30983) */
+  U.fullscreen = (el, { cap, src, label, sub, action }) => {
+    const f = document.createElement('div');
+    f.className = 'fs';
+    const video = cap && cap.kind === 'video' && !cap.sample;
+    f.innerHTML = `${video ? `<video src="${cap.url}" muted loop playsinline autoplay controls></video>` : `<img src="${src}" alt="">`}
+      ${label ? `<div class="fl"><b>${esc(label)}</b>${sub ? `<span>${esc(sub)}</span>` : ''}</div>` : ''}
+      ${action ? `<button class="btn fs-act">${esc(action.label)}</button>` : ''}
+      <button class="x" aria-label="Close"><img src="${I('x-24-w.svg')}" alt=""></button>`;
+    f.querySelector('.x').addEventListener('click', (e) => { e.stopPropagation(); f.remove(); });
+    if (action) f.querySelector('.fs-act').addEventListener('click', (e) => { e.stopPropagation(); action.onClick(); });
+    el.appendChild(f);
+    return f;
   };
 })();

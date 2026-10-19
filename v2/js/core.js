@@ -1,6 +1,6 @@
-/* V2 core runtime: router, stage scaling + orientation (one rotation per stage), state, voice-over with captions,
-   camera (live checks, torch, fallback stills), recording, quality checks, background uploads, permissions.
-   Based on V1's runtime; see /v1/js/core.js for the original. */
+/* V2 core runtime: router, stage scaling + orientation (counter-rotation + rotate prompt), state, voice-over with a
+   playback ring on the voice button, camera (live checks, auto torch, zoom, fallback stills), recording, quality
+   checks, background uploads, permissions. Based on V1's runtime; see /v1/js/core.js for the original. */
 (function () {
   const params = new URLSearchParams(location.search);
 
@@ -10,15 +10,14 @@
     current: null,
     cleanup: null,
     fast: params.get('fast') === '1', // review/testing: 3 s video minimum instead of 10 s
-    config: { reg: 'KA 01 AB 1234', model: 'Hyundai Creta', policy: 'MTR-24-88213', ref: 'PI-24-88213' },
+    config: { owner: 'Rahul', reg: 'KA 01 AB 1234', model: 'Hyundai Creta', policy: 'MTR-24-88213', ref: 'PI-24-88213' },
     state: {
       captures: {}, // key -> {kind:'photo'|'video', url, blob, w, h, duration, quality:{dark,blurry,ok}, sample?}
       damages: [], // [{panel, type, close, wide}]
       rcType: 'card', // 'card' | 'paper' (toggle on the RC screen)
       permissions: {},
       location: null,
-      note: '', chips: [],
-      cc: true, // captions on
+      note: '', voiceNote: null,
       rotLock: false, // "Rotation locked? Start anyway": keep screens counter-rotated, no turn prompt
       // optional capture flows picked on the internal Items screen (?optional=0 starts with all off)
       items: Object.fromEntries(['windshield', 'roof', 'vin', 'engine'].map((k) => [k, params.get('optional') !== '0'])),
@@ -96,7 +95,8 @@
     document.body.style.background = framed ? '' : getComputedStyle(el).backgroundColor;
   }
 
-  /* turn prompt over a counter-rotated screen (V2 style; "Continue anyway" covers rotation lock) */
+  /* rotate prompt over a counter-rotated screen (Figma 669:31280). The card is turned back so it reads upright in the
+     hand; "Rotation locked? Continue anyway" keeps the counter-rotated screen without the prompt. */
   function togglePrompt(show, def) {
     let p = stage.querySelector('.turn-prompt');
     if (!show) { if (p) p.remove(); return; }
@@ -104,12 +104,12 @@
     const land = def.orientation === 'landscape';
     p = document.createElement('div');
     p.className = 'turn-prompt';
-    p.innerHTML = `<div class="tp-card"><div class="tp-ic"><img src="${App.asset('s0/ic-rotate.svg')}" alt=""></div>
-      <p class="tp-t">Turn your phone ${land ? 'sideways' : 'upright'}</p>
-      <p class="tp-s">${land ? 'Captures happen in landscape.' : 'This part is easier in portrait.'}</p>
+    p.innerHTML = `<div class="tp-card ${App.rot || ''}"><p class="tp-t">Please rotate your phone</p>
+      <img class="tp-ic ${land ? '' : 'to-p'}" src="${App.asset('ui/smartphone.svg')}" alt="">
       <button class="tp-skip" type="button">Rotation locked? Continue anyway</button></div>`;
     p.querySelector('.tp-skip').addEventListener('click', () => { App.state.rotLock = true; p.remove(); });
     stage.appendChild(p);
+    App.VO.speak(land ? 'Please turn your phone sideways to continue.' : 'Please turn your phone upright to review.');
   }
 
   /* Stage = design canvas scaled to the viewport. Portrait 390 wide (height flexes), landscape fits the 850×356 content
@@ -195,7 +195,7 @@
   addEventListener('touchend', () => {
     if (ptrY0 === null) return;
     ptrY0 = null;
-    if (ptrDy >= PTR_TRIGGER) { ptr.classList.add('spin'); location.reload(); } else ptrSet(0, true);
+    if (ptrDy >= PTR_TRIGGER) { ptr.classList.add('spin'); location.href = '../'; /* back to the version launcher */ } else ptrSet(0, true);
   });
 
   /* ---------- helpers ---------- */
@@ -204,7 +204,7 @@
   App.save = (key, cap) => { App.state.captures[key] = cap; Uploads.add(cap); return cap; };
   App.drop = (key) => { delete App.state.captures[key]; };
 
-  /* ---------- Voice-over (speechSynthesis) + captions ---------- */
+  /* ---------- Voice-over (speechSynthesis) ---------- */
   const VO = (App.VO = {
     muted: false,
     text: '',
@@ -217,7 +217,6 @@
     },
     speak(text) {
       this.text = String(text).replace(/[“”"]/g, '');
-      document.querySelectorAll('#stage [data-caption]').forEach((n) => { n.textContent = this.text; });
       this.stop();
       if (this.muted || !window.speechSynthesis) return;
       const u = new SpeechSynthesisUtterance(this.text);
@@ -225,15 +224,23 @@
       if (v) { u.voice = v; u.lang = v.lang; } else u.lang = 'en-IN';
       const est = Math.max(1.2, this.text.split(/\s+/).length / 2.6) * 1000;
       const cues = this.cues(this.text);
-      let exact = false;
-      u.onstart = () => { this._cueT = cues.map((c) => setTimeout(() => !exact && this.cue(c), (est * c.at) / this.text.length)); };
+      let exact = false, t0 = 0;
+      u.onstart = () => {
+        t0 = Date.now();
+        this._cueT = cues.map((c) => setTimeout(() => !exact && this.cue(c), (est * c.at) / this.text.length));
+        this._ringT = setInterval(() => this.ring(Math.min(0.97, (Date.now() - t0) / est)), 120);
+      };
       u.onboundary = (e) => {
         if (e.name && e.name !== 'word') return;
         exact = true;
         cues.forEach((c) => { if (!c.done && e.charIndex >= c.at) this.cue(c); });
+        this.ring(Math.min(1, e.charIndex / this.text.length));
       };
+      u.onend = () => { clearInterval(this._ringT); this.ring(1); };
       setTimeout(() => speechSynthesis.speak(u), 120);
     },
+    /* playback ring on the voice button (Icon button progress 669:33517) */
+    ring(p) { document.querySelectorAll('#stage .vo-btn .bar').forEach((c) => { c.style.strokeDasharray = `${(p * 119.4).toFixed(1)} 200`; }); },
     /* CTA cues (from V1): "tap Record" / "Tap Use photo" → highlight that visible button as the word is spoken */
     cues(text) {
       const norm = (s) => s.replace(/[’‘]/g, "'").replace(/^'|'$/g, '').replace(/\s+/g, ' ').trim().toLowerCase();
@@ -263,6 +270,7 @@
     },
     stop() {
       (this._cueT || []).forEach(clearTimeout);
+      clearInterval(this._ringT); this.ring(0);
       document.querySelectorAll('.vo-cue').forEach((n) => n.classList.remove('vo-cue'));
       if (window.speechSynthesis) speechSynthesis.cancel();
     },
@@ -276,15 +284,6 @@
         b.classList.toggle('off', this.muted);
         b.addEventListener('click', () => this.setMuted(!this.muted));
       });
-      root.querySelectorAll('[data-action="cc-toggle"]').forEach((b) => {
-        b.classList.toggle('off', !App.state.cc);
-        b.addEventListener('click', () => {
-          App.state.cc = !App.state.cc;
-          document.documentElement.classList.toggle('no-cc', !App.state.cc);
-          b.classList.toggle('off', !App.state.cc);
-        });
-      });
-      document.documentElement.classList.toggle('no-cc', !App.state.cc);
     },
   });
   if (window.speechSynthesis) speechSynthesis.onvoiceschanged = () => { VO._voice = null; VO.pickVoice(); };
@@ -320,7 +319,7 @@
 
   /* ---------- Camera ---------- */
   const Camera = (App.Camera = {
-    stream: null, video: null, error: null, torchOn: false,
+    stream: null, video: null, error: null, torchOn: false, zoom: 1,
     async start() {
       if (this.stream && this.stream.active) return this.stream;
       if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
@@ -354,7 +353,7 @@
     },
     /* Live preview into a .cam-slot; falls back to the screen's sample still (so the flow works without a camera). */
     async attach(slot, { fallbackImg, crop } = {}) {
-      this.source = null;
+      this.source = null; this.zoom = 1;
       try {
         await this.start();
         slot.querySelectorAll('.cam-fallback').forEach((n) => n.remove());
@@ -373,6 +372,11 @@
         slot.classList.add('no-cam');
         return false;
       }
+    },
+    /* Digital zoom (1×/2×/3×): scales the preview; snap() crops the same region */
+    setZoom(slot, z) {
+      this.zoom = z;
+      slot.querySelectorAll('video, .cam-fallback').forEach((m) => { m.style.transform = (m === this.video && App.rot ? 'translate(-50%, -50%) rotate(-90deg) ' : '') + `scale(${z})`; });
     },
     /* Upright frame of what's on screen (rotation-lock mode turns the camera frame back upright) */
     frame() {
@@ -398,7 +402,7 @@
       const f = this.frame();
       if (!f) throw new Error('Camera not ready');
       const sw = slot.offsetWidth, sh = slot.offsetHeight;
-      const s = Math.max(sw / f.width, sh / f.height);
+      const s = Math.max(sw / f.width, sh / f.height) * (this.zoom || 1);
       const ox = (sw - f.width * s) / 2, oy = (sh - f.height * s) / 2;
       const r = cropEl ? { x: cropEl.offsetLeft - slot.offsetLeft, y: cropEl.offsetTop - slot.offsetTop, w: cropEl.offsetWidth, h: cropEl.offsetHeight } : { x: 0, y: 0, w: sw, h: sh };
       let sx = (r.x - ox) / s, sy = (r.y - oy) / s, cw = r.w / s, ch = r.h / s;
@@ -437,8 +441,11 @@
   /* ---------- Background uploads (simulated): every capture starts uploading as soon as it is saved ---------- */
   const Uploads = (App.Uploads = {
     add(cap) { if (cap && !cap.up) cap.up = { t0: Date.now(), dur: 2500 + Math.random() * 4500 }; },
-    progress(cap) { if (!cap) return 1; this.add(cap); return Math.min(1, (Date.now() - cap.up.t0) / cap.up.dur); },
+    progress(cap) { if (!cap) return 1; this.add(cap); if (cap.up.failed) return cap.up.at; return Math.min(1, (Date.now() - cap.up.t0) / cap.up.dur); },
     done(cap) { return this.progress(cap) >= 1; },
+    failed(cap) { return !!(cap && cap.up && cap.up.failed); },
+    fail(cap) { this.add(cap); cap.up = { t0: Date.now(), dur: 1e9, failed: true, at: 0.2 + Math.random() * 0.5 }; },
+    retry(cap) { cap.up = { t0: Date.now(), dur: 2500 + Math.random() * 3500 }; },
   });
 
   /* ---------- Permissions ---------- */

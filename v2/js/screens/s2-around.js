@@ -1,233 +1,236 @@
-/* V2 · Stage 2 · Around the car (landscape, no rotation): step out → VIN → verdict → bonnet + engine sound
-   → 10-angle walk-around (auto-advance with undo toast; a failed check stops with a verdict) → damages map
-   (tap a panel → close-up + wide shot → type) → turn upright. Figma section 648:21111. */
+/* V2 · Stage 2 · Around the car (landscape): step out → VIN → engine sound → close bonnet + 360° intro → 10-angle
+   walk-around (auto-advance, orbit status) → all captured → damages. Figma 669:30753 §5–6. */
 (function () {
-  const { A, esc } = U;
+  const { A, I, esc } = U;
+  const IMG = (f) => A('img/' + f);
   const P = (f) => A('photo/' + f);
   const F = App.flow;
   const st = App.state;
+  const next = (key) => App.go(App.nextAfter(F.after(key)));
+  const recTime = () => U.fmt(Math.max(0, (Date.now() - (st.recT0 || Date.now())) / 1000));
 
-  /* ---------- 16 Step out · Around the car (651:21580) ---------- */
-  const PLAN = {
-    vin: ['vin.jpg', 'VIN', 'Bottom of the windshield, driver side', 'Photo'],
-    engine: ['engine.jpg', 'Engine sound', 'Open the bonnet, engine running', 'Video · 10 s'],
-    walk: ['walk-1.jpg', 'Walk-around', '10 photos, saved as you walk', 'Photo × 10'],
-    damages: ['dmg.jpg', 'Damages', 'Tap the car map, if any', 'Optional'],
+  /* ---------- Step out (692:68759) → Around the car agenda (728:55318 / only mandatory 730:55433) ---------- */
+  const S2_ROWS = {
+    vin: { src: P('vin.jpg'), t: 'VIN', s: () => 'Bottom of the windshield, driver side', kind: 'Photo' },
+    engine: { src: P('engine.jpg'), t: 'Engine sound', s: () => 'Open the bonnet, engine running', kind: 'Video' },
+    walk: { src: A('walk/w2.jpg'), t: 'Walk-around', s: () => '10 photos, saved as you walk', kind: 'Photo' },
   };
+  const STEP_OUT_VO = "Please step out of the car. Keep the engine running. Recording is still on. Tap Done once you're outside.";
   App.screen({
-    id: 'step-out', node: '651:21580', title: '16 · Step out · Around the car', orientation: 'landscape', className: 's2-out',
+    id: 'step-out', node: '692:68759', title: 'Stage 2 · step out + agenda', orientation: 'landscape', className: 's2-ag',
+    vo: () => (st.seen['step-out'] ? "Next, we'll capture the following items, one by one. Tap Continue Inspection." : STEP_OUT_VO),
     render: () => {
-      U.takeToast(); // stage 1's last save is confirmed by the "saved" chip here
-      const s1 = F.s1(), saved = s1.filter((x) => App.capture(x.key)).length;
-      const rows = [...F.s2().map((x) => x.key), 'damages'];
+      if (!st.recT0) st.recT0 = Date.now();
+      const rows = F.s2().map((x) => x.key).filter((k) => S2_ROWS[k]);
       return `${U.status()}
-      <div class="so-body">
-        <div class="so-left">
-          <span class="so-chip">✓ Inside the car · ${saved} of ${s1.length} saved</span>
-          <p class="so-h">Now, step out of the car</p>
-          <p class="so-s">Keep the engine running and the phone sideways. Stand at the front of the car to begin.</p>
-          <i class="sp"></i>
-          <button class="btn" data-go="${F.stage2Start()}">I'm at the front · start</button>
+      <div class="ag-nav">${U.logo()}${U.vo()}</div>
+      <div class="ag-body">
+        <div class="ag-left">
+          <div class="ag-top"><span class="recchip"><img src="${I('rec-dot-10.svg')}" alt="">RECORDING STILL IN PROGRESS</span>
+            <p class="h">Around the car</p><p class="s">About 5 minutes. The voice guide talks you through each one.</p></div>
+          <button class="btn full" data-go="${F.stage2Start()}">Continue inspection</button>
         </div>
-        <div class="so-plan card"><p class="ph">STAGE 2 OF 3 · ABOUT 5 MIN</p>${rows.map((k, i) => { const [img, t, s, m] = PLAN[k]; return `${i ? '<i class="divider"></i>' : ''}
-          <div class="pr2"><span class="th"><img src="${P(img)}" alt=""></span><div class="pt"><b>${t}</b><em>${s}</em></div><span class="m">${m}</span></div>`; }).join('')}</div>
-      </div>`;
+        <div class="ag-right">${rows.map((k) => U.agendaRow(S2_ROWS[k])).join('')}</div>
+      </div>
+      ${st.seen['step-out'] ? '' : `<div class="ov"><div class="lmodal stepout"><p class="mt">Step out of the car</p>
+        <div class="car"><img class="flip" src="${IMG(F.has('engine') ? 'car-stepout.png' : 'car-door.png')}" alt=""></div>
+        <div class="cta"><p>Tap Done once you’re outside</p><button class="btn full" data-action="done">Done</button></div></div></div>`}`;
+    },
+    mount: (el) => el.addEventListener('click', (e) => {
+      if (!e.target.closest('[data-action="done"]')) return;
+      st.seen['step-out'] = true;
+      App.rerender();
+    }),
+  });
+
+  /* ---------- VIN (instruction 669:31610 · where? 753:36639 · capture 734:56718 · captured 743:60244) ---------- */
+  U.photoStep({
+    id: 'vin', node: '734:56718', okNode: '743:60244', title: 'VIN capture', stage: 's2', win: 'vin',
+    key: () => 'vin', fallback: () => IMG('cam-vin.jpg'),
+    badge: 'Fit the VIN in the frame and tap the shutter',
+    modal: () => ({
+      vo: 'Now, capture the VIN or chassis number. Look under the bonnet, at the bottom of the windshield, or on the door frame.',
+      html: U.lmodal({
+        title: 'Capture VIN', sub: 'You’ll find it in one of these spots', cls: 'vinm',
+        body: `<div class="spots">${[1, 2, 3].map((n) => `<img src="${IMG(`vin-spot-${n}.jpg`)}" alt="">`).join('')}</div>`,
+        foot: '<div class="row"><button class="btn sec flex" data-action="where">Where is VIN?</button><button class="btn flex" data-action="got-it">Got it</button></div>',
+      }),
+    }),
+    vo: 'Fit the VIN in the frame and tap Capture.',
+    ask: () => 'Can you read all 17 characters? Tap Use photo.', mode: 'skip',
+    onAction: (act, el) => {
+      if (act !== 'where') return;
+      const f = document.createElement('div');
+      f.className = 'fs vinwhere';
+      f.innerHTML = `<img src="${IMG('vin-where.png')}" alt="VIN locations: windshield, door frame, engine bay"><button class="x" aria-label="Close"><img src="${I('x-24-w.svg')}" alt=""></button>`;
+      f.querySelector('.x').addEventListener('click', (e) => { e.stopPropagation(); f.remove(); });
+      el.appendChild(f);
     },
   });
 
-  /* ---------- 17 VIN · coach (651:21659) → 18 verdict (651:21722) ---------- */
-  U.photoItem({
-    id: 'vin', stage: 's2', exit: 'step-out', node: '651:21659', verdictNode: '651:21722', title: '17 · VIN capture (coach)', win: 'wide',
-    key: () => 'vin', label: () => 'VIN', fallback: () => P('vin.jpg'), example: P('vin-example.jpg'),
-    target: { l: 23.05, t: 70.9, w: 55.9, h: 23.1, label: 'VIN plate' },
-    hint: { text: 'Fit the VIN plate inside the box' },
-    ok: () => 'VIN plate is sharp · hold still',
-    caption: () => 'Find the VIN at the bottom of the windshield, driver side. Fit it inside the box.',
-    ask: 'Can you read all 17 characters? Tap Use photo.',
+  /* ---------- Engine sound (669:31466 → 734:57042 → 669:31390 → 669:31401 → 743:60359) ---------- */
+  U.videoStep({
+    id: 'engine', node: '734:57042', okNode: '743:60359', title: 'Engine sound video', stage: 's2', key: 'engine', label: 'Engine sound',
+    modal: { title: 'Record Engine Sound', pic: IMG('modal-engine.jpg'), vo: 'Now, record the engine sound. Keep the engine running.' },
+    vo: 'Keep it inside the frame and tap Record. Hold for at least 10 seconds.', during: 'Hold steady. Keep the engine running.',
+    badge: 'Point at the engine and tap Record. Hold 10 s', badgeOn: 'Hold steady, recording the engine sound',
+    fallback: IMG('cam-engine.jpg'), chips: ['Clear audio', '10 s or more'], ask: 'Can you hear the engine clearly? Tap Use video.',
   });
 
-  /* ---------- 19 Bonnet + engine sound (651:21774): open the bonnet right here, close it before the walk-around ---------- */
-  U.videoItem({
-    id: 'engine', stage: 's2', exit: 'step-out', key: 'engine', label: 'Engine sound', node: '651:21774', title: '19 · Bonnet + engine sound',
-    photo: 'engine.jpg', noPace: true, savedNote: 'clear audio',
-    hint: { text: 'Open the bonnet, then tap Record' }, ok: 'Engine in frame · tap Record',
-    pace: 'Engine sound is clear · hold still',
-    caption: 'Open the bonnet and keep the engine running. Then tap Record.',
-    during: 'Bonnet open, engine running. Hold the phone over the engine until the ring fills.',
-  });
-
-  /* ---------- 20–29 Walk-around (652:21644 … 652:22529): one spatial progress ring, auto-advance ---------- */
-  const HOLD = 'Hold still and walk slowly to the next spot.';
+  /* ---------- 360° walk-around (steps 720:48913 … 713:46171) ---------- */
   const WALK = [
-    { name: 'Front', short: 'Front', photo: 'walk-1.jpg', node: '652:21644', hint: 'Stand at the front, then hold still', cap: 'Now, the walk-around. Start at the front and keep the whole car in the frame.' },
-    { name: 'Front-left corner', short: 'Front-left', photo: 'walk-2.jpg', node: '652:21745', hint: 'Walk to the front-left corner, then hold still', cap: 'Now, capture the front left. Keep the whole car inside the frame.' },
-    { name: 'Left side, front half', short: 'Left front half', photo: 'walk-left.jpg', crop: 'l', node: '652:21805', hint: 'Walk to the left side, then hold still', cap: HOLD },
-    { name: 'Left side, rear half', short: 'Left rear half', photo: 'walk-left.jpg', crop: 'r', node: '652:21890', hint: 'Walk to the rear half, then hold still', cap: HOLD },
-    { name: 'Rear-left corner', short: 'Rear-left', photo: 'walk-5.jpg', node: '652:21994', hint: 'Walk to the rear-left corner', cap: HOLD },
-    { name: 'Rear', short: 'Rear', photo: 'walk-6.jpg', node: '652:22099', hint: 'Walk to the back of the car', cap: HOLD },
-    { name: 'Rear-right corner', short: 'Rear-right', photo: 'walk-7.jpg', node: '652:22205', hint: 'Walk to the rear-right corner', cap: HOLD },
-    { name: 'Right side, rear half', short: 'Right rear half', photo: 'walk-right.jpg', crop: 'l', node: '652:22312', hint: 'Walk to the right side, then hold still', cap: HOLD },
-    { name: 'Right side, front half', short: 'Right front half', photo: 'walk-right.jpg', crop: 'r', node: '652:22420', hint: 'Walk to the front half, then hold still', cap: HOLD },
-    { name: 'Front-right corner', short: 'Front-right', photo: 'walk-10.jpg', node: '652:22529', hint: 'Last one · walk to the front-right corner', cap: 'Last one. Keep the whole car inside the frame.' },
-  ];
+    { name: 'Front', node: '720:48913', vo: 'Stand in front of the car. Keep the whole car in the frame and tap Capture.' },
+    { name: 'Front left', node: '706:44391', vo: 'Walk slowly to the front left corner, then tap Capture.' },
+    { name: 'Left, front half', node: '706:45179', vo: 'Now, the left side, front half.' },
+    { name: 'Left, rear half', node: '713:45453', vo: 'Now, the left side, rear half.' },
+    { name: 'Rear left', node: '713:45571', vo: 'Walk to the rear left corner, then tap Capture.' },
+    { name: 'Rear', node: '713:45691', vo: 'Now, the rear of the car.' },
+    { name: 'Rear right', node: '713:45811', vo: 'Walk to the rear right corner, then tap Capture.' },
+    { name: 'Right, rear half', node: '713:45931', vo: 'Now, the right side, rear half.' },
+    { name: 'Right, front half', node: '713:46051', vo: 'Now, the right side, front half.' },
+    { name: 'Front right', node: '713:46171', vo: 'Last one. Walk to the front right corner, then tap Capture.' },
+  ].map((w, i) => ({ ...w, photo: A(`walk/w${i + 1}.jpg`) })); // sample stills: Figma 360° step photos
   U.WALK = WALK;
   const wkey = (n) => 'walk_' + n;
-  // ring positions (top-down car, front up), Figma 652:21666
-  const POS = [[55, 13], [30.5, 21.5], [15.5, 42.5], [15.5, 67.5], [30.5, 88.5], [55, 97], [79.5, 88.5], [94.5, 67.5], [94.5, 42.5], [79.5, 21.5]];
-  const ring = (cur) => `<svg class="wring" viewBox="0 0 110 110"><rect width="110" height="110" rx="20" fill="#0C1126" fill-opacity=".62"/>
-    <circle cx="55" cy="55" r="42" fill="none" stroke="#fff" stroke-opacity=".2" stroke-width="2" stroke-dasharray="3 5"/>
-    <rect x="42" y="33" width="26" height="44" rx="9" fill="#fff" fill-opacity=".9"/><rect x="45" y="40" width="20" height="8" rx="3" fill="#0C1126" fill-opacity=".5"/>
-    ${POS.map(([x, y], i) => {
-      const n = i + 1;
-      if (n === cur) return `<circle cx="${x}" cy="${y}" r="11" fill="#1C3095" fill-opacity=".35"/><circle cx="${x}" cy="${y}" r="7" fill="#fff"/>`;
-      if (App.capture(wkey(n))) return `<circle cx="${x}" cy="${y}" r="7" fill="#32D583"/><path d="M${x - 3.2} ${y + .2}l2.2 2.2 4.2-4.6" fill="none" stroke="#fff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>`;
-      return `<circle cx="${x}" cy="${y}" r="4.5" fill="#fff" fill-opacity=".45"/>`;
-    }).join('')}</svg>`;
-  const NEXT = ['front-left corner', 'left side', 'left rear half', 'rear-left corner', 'rear', 'rear-right corner', 'right side', 'right front half', 'front-right corner'];
+  const walkDone = () => WALK.filter((_, i) => App.capture(wkey(i + 1))).length;
+
+  /* orbit status (Capture status 706:44636): dashed ring, top-down car (front down), 10 angles counter-clockwise from
+     the front; done = green tick, current = blue dot with a view cone toward the car, numbers for the intro */
+  U.orbit = (cur, mode) => {
+    const R = 37, C = 43;
+    const dots = WALK.map((_, i) => {
+      const n = i + 1, a = (i * 36 * Math.PI) / 180, x = C + R * Math.sin(a), y = C + R * Math.cos(a);
+      if (mode === 'numbers') return `<span class="on num" style="left:${x}px;top:${y}px">${n}</span>`;
+      if (n === cur) return `<img class="cone" style="left:${x - 21.6}px;top:${y - 21.3}px;transform:rotate(${-i * 36}deg)" src="${A('cam2/orb-cur.svg')}" alt="">`;
+      if (mode === 'all' || App.capture(wkey(n))) return `<button class="on ok" data-angle="${n}" style="left:${x}px;top:${y}px" aria-label="${WALK[i].name}"><img src="${A('cam2/orb-check.svg')}" alt=""></button>`;
+      return `<img class="on" style="left:${x}px;top:${y}px" src="${A('cam2/orb-todo.svg')}" alt="">`;
+    }).join('');
+    return `<div class="orbit ${mode || ''}"><img class="ring" src="${A('cam2/orb-circle.png')}" alt=""><img class="car" src="${A('cam2/orb-car.png')}" alt="">${dots}</div>`;
+  };
+
+  const introModal = () => {
+    if (App.capture('engine') && !st.seen.bonnetClosed) {
+      return { vo: "Please close the bonnet. Tap I'm Ready once it's closed.", html: `<div class="ov"><div class="lmodal stepout"><p class="mt">Close the Bonnet</p>
+        <div class="car"><img class="flip" src="${IMG('car-closed.png')}" alt=""></div><button class="btn full" data-action="bonnet-closed">I’m Ready</button></div></div>` };
+    }
+    if (!st.seen.walkIntro) {
+      return { vo: 'Now, record a full round of your car. Make sure the car is always in the frame while moving.',
+        html: U.lmodal({ title: '360° walk-around', cls: 'orbm', body: `<div class="orb-wrap">${U.orbit(0, 'numbers')}</div>`, foot: '<button class="btn full" data-action="walk-go">Continue</button>' }) };
+    }
+    return null;
+  };
 
   WALK.forEach((w, i) => {
     const n = i + 1;
-    const afterWalk = () => App.nextAfter(n < 10 ? `walk-${n + 1}` : 'damages');
-    // the bonnet is only opened for the engine sound: close it before the walk-around starts
-    const bonnet = () => n === 1 && App.capture('engine');
+    const modal = () => (n === 1 ? introModal() : null);
+    const last = () => { for (let k = 10; k >= 1; k--) if (App.capture(wkey(k))) return App.capture(wkey(k)); return null; };
     App.screen({
-      id: `walk-${n}`, node: w.node, title: `${20 + i} · Walk-around ${n} of 10 · ${w.name}`, orientation: 'landscape', className: 'cam c-wide walk',
-      vo: () => (bonnet() ? 'Close the bonnet. ' : '') + w.cap,
-      render: () => U.cam({
-        win: 'wide', pill: { label: w.name, i: n, n: 10 }, ring: `<div class="ring-wrap">${ring(n)}</div>`,
-        hint: { icon: 'walk', text: bonnet() ? 'Close the bonnet, then stand at the front' : w.hint }, toast: U.takeToast(),
-        extra: n < 10 ? `<span class="next-chip"><img src="${A('cam/walk-ic.svg')}" alt="">Next: ${NEXT[i]}</span>` : '',
-      }),
-      mount: (el) => U.mountCam(el, {
-        fallback: P(w.photo), fallbackCrop: w.crop, exit: 'step-out',
-        hint: { icon: 'walk', text: bonnet() ? 'Close the bonnet, then stand at the front' : w.hint }, live: { ok: 'Whole car in frame · hold still' },
-        onShot: (cap) => {
-          App.save(wkey(n), cap);
-          if (cap.quality && cap.quality.ok === false) { st.walkBad = n; return App.go('walk-check'); }
-          U.setToast({ img: cap.url, title: `${w.short} saved`, sub: 'Sharp, whole car in frame', undo: { drop: () => App.drop(wkey(n)), go: `walk-${n}` } });
-          App.go(afterWalk());
-        },
-      }),
+      id: `walk-${n}`, node: w.node, title: `360° · step ${n} · ${w.name}`, orientation: 'landscape', className: 'cam walk',
+      vo: () => { const m = modal(); return m ? m.vo : w.vo; },
+      render: () => {
+        const m = modal(), lc = last();
+        return U.cam({
+          items: F.s2(), cur: 'walk', railCls: 'dark wrail', badge: 'Fit the car in frame and tap on the shutter',
+          navLeft: `<span class="wl"><button class="xbtn" data-action="exit" aria-label="Close"><img src="${I('x-20-w.svg')}" alt=""></button>
+            <span class="rec"><i></i><b data-rec>REC ${recTime()}</b></span></span>`,
+          railTop: U.orbit(n),
+          railBottom: `<button class="lthumb" data-action="last" ${lc ? '' : 'disabled'}>${lc ? `<img src="${lc.url}" alt="">` : ''}</button>`,
+          extra: `${n > 1 ? `<div class="cue"><img src="${I('arrows.svg')}" alt=""><span>Walk around the car slowly</span><img src="${I('arrows.svg')}" alt=""></div>` : ''}
+            <div class="angle"><p class="ah"><span>${n}</span>Capture<br>${esc(w.name)}</p><div class="ai"><img src="${w.photo}" alt=""></div></div>`,
+        }) + (m ? m.html : '');
+      },
+      mount: (el) => {
+        const iv = setInterval(() => { const r = el.querySelector('[data-rec]'); if (r) r.textContent = `REC ${recTime()}`; }, 1000);
+        const off = U.mountCam(el, {
+          fallback: w.photo,
+          onShot: (cap) => {
+            App.save(wkey(n), cap);
+            if (cap.quality && cap.quality.ok === false) { st.walkBad = n; return App.go('walk-check'); }
+            // auto-advance to the next angle (no preview); retakes started from review/summary go back there
+            App.go(App.nextAfter(n < 10 ? `walk-${n + 1}` : 'walk-done'));
+          },
+          onAction: (act, _el, btn) => {
+            if (act === 'exit') App.go('step-out');
+            if (act === 'bonnet-closed') { st.seen.bonnetClosed = true; App.rerender(); }
+            if (act === 'walk-go') { st.seen.walkIntro = true; el.querySelector('.ov').remove(); App.VO.speak(w.vo); }
+            if (act === 'last') {
+              const k = WALK.map((_, j) => j + 1).filter((j) => App.capture(wkey(j))).pop();
+              if (k) U.fullscreen(el, { cap: App.capture(wkey(k)), src: App.capture(wkey(k)).url, label: WALK[k - 1].name, sub: `${k} of 10` });
+            }
+          },
+        });
+        // tap a captured angle on the orbit to retake it, then come back here
+        el.addEventListener('click', (e) => {
+          const d = e.target.closest('[data-angle]');
+          if (!d || +d.dataset.angle === n) return;
+          st.returnTo = `walk-${n}`;
+          App.go(`walk-${d.dataset.angle}`);
+        });
+        return () => { clearInterval(iv); off(); };
+      },
     });
   });
-  // a failed walk-around check stops the flow with a specific retake hint
+  // a failed check stops the walk-around with the review panel
   App.screen({
-    id: 'walk-check', title: 'Walk-around · failed check', orientation: 'landscape', className: 'verdict',
+    id: 'walk-check', title: '360° · failed check', orientation: 'landscape', className: 'vpage',
+    vo: () => U.verdictVO({ cap: App.capture(wkey(st.walkBad || 1)), mode: 'anyway' }),
     render: () => {
       const n = st.walkBad || 1, w = WALK[n - 1];
-      return U.verdict({ label: `${w.name} · ${n} of 10`, cap: App.capture(wkey(n)), fallback: P(w.photo), ask: '' });
+      return U.verdict({ label: `${w.name} · ${n} of 10`, cap: App.capture(wkey(n)), fallback: w.photo, ask: '', mode: 'anyway' });
     },
     mount: (el) => U.mountVerdict(el, {
-      onUse: () => { const n = st.walkBad || 1; App.go(App.nextAfter(n < 10 ? `walk-${n + 1}` : 'damages')); },
+      cap: App.capture(wkey(st.walkBad || 1)),
+      onUse: () => { const n = st.walkBad || 1; App.go(App.nextAfter(n < 10 ? `walk-${n + 1}` : 'walk-done')); },
       onRetake: () => { const n = st.walkBad || 1; App.drop(wkey(n)); App.go(`walk-${n}`); },
     }),
   });
 
-  /* ---------- 30 / 32 Damages map (653:21804 / 653:21944) ---------- */
-  // panels of the top-down map (Figma vectors 653:21956 …): front, roof, rear and the four doors
-  const PANELS = [
-    { id: 'front', name: 'Front bumper', d: 'M120.5 60.5C150.5 49.8 180.5 49.8 210.5 60.5L206.5 92.5H124.5Z' },
-    { id: 'roof', name: 'Roof', d: 'M130 96.5H200A6 6 0 0 1 206 102.5V160.5A6 6 0 0 1 200 166.5H130A6 6 0 0 1 124 160.5V102.5A6 6 0 0 1 130 96.5Z' },
-    { id: 'rear', name: 'Rear bumper', d: 'M124.5 170.5H206.5L210.5 196.5C180.5 207.2 150.5 207.2 120.5 196.5Z' },
-    { id: 'lf', name: 'Left front door', d: 'M108 92.5H111A4 4 0 0 1 115 96.5V128.5A4 4 0 0 1 111 132.5H108A4 4 0 0 1 104 128.5V96.5A4 4 0 0 1 108 92.5Z' },
-    { id: 'lr', name: 'Left rear door', d: 'M108 136.5H111A4 4 0 0 1 115 140.5V172.5A4 4 0 0 1 111 176.5H108A4 4 0 0 1 104 172.5V140.5A4 4 0 0 1 108 136.5Z' },
-    { id: 'rf', name: 'Right front door', d: 'M219 92.5H222A4 4 0 0 1 226 96.5V128.5A4 4 0 0 1 222 132.5H219A4 4 0 0 1 215 128.5V96.5A4 4 0 0 1 219 92.5Z' },
-    { id: 'rr', name: 'Right rear door', d: 'M219 136.5H222A4 4 0 0 1 226 140.5V172.5A4 4 0 0 1 222 176.5H219A4 4 0 0 1 215 172.5V140.5A4 4 0 0 1 219 136.5Z' },
-  ];
-  const MARK = { front: [165, 74], roof: [165, 131], rear: [165, 189], lf: [99, 112], lr: [99, 156], rf: [231, 112], rr: [231, 156] };
-  const TYPES = ['Dent', 'Scratch', 'Crack', 'Other'];
-  const map = () => {
-    const tagged = {};
-    st.damages.forEach((d, i) => { (tagged[d.panel] = tagged[d.panel] || []).push(i + 1); });
-    return `<svg class="dmap" viewBox="0 0 330 250">
-      <rect x=".5" y=".5" width="329" height="249" rx="16" fill="#fff" stroke="#EAECF0"/>
-      <text x="165" y="22" class="lab">FRONT</text><text x="165" y="236" class="lab">REAR</text><text x="72" y="102" class="lab">LEFT</text><text x="258" y="102" class="lab">RIGHT</text>
-      <rect x="115.75" y="32.75" width="100" height="186" rx="34" fill="#F4F6FB" stroke="#D0D5DD" stroke-width="1.5"/>
-      ${PANELS.map((p) => `<path data-panel="${p.id}" class="pnl ${tagged[p.id] ? 'hit' : ''} ${p.id === 'front' ? 'tint' : ''}" d="${p.d}"/>`).join('')}
-      ${Object.entries(tagged).map(([pid, nums]) => { const [x, y] = MARK[pid]; return `<g class="mk"><circle cx="${x}" cy="${y}" r="10"/><text x="${x}" y="${y + 4}">${nums[nums.length - 1]}</text></g>`; }).join('')}
-    </svg>`;
-  };
+  /* ---------- 360° · All captured (737:58532) ---------- */
   App.screen({
-    id: 'damages', node: '653:21804', title: '30 · Damages map (32 · tagged)', orientation: 'landscape', className: 's2-dmg',
-    render: () => {
-      U.takeToast();
-      const d = st.damages;
-      return `${U.status()}
-      <div class="dm-top"><div><p class="h">Any dents or scratches?</p><p class="s">Tap where the damage is, then take a close-up. Old damage counts too.</p></div><span class="stage-pill">Optional</span></div>
-      <div class="dm-map">${map()}</div>
-      <div class="dm-side">
-        <div class="dm-list">${d.length ? d.map((x, i) => `
-          <div class="dm-row"><span class="num">${i + 1}</span><span class="th"><img src="${x.close ? x.close.url : P('dmg.jpg')}" alt=""></span>
-            <div class="pt"><b>${esc(PANELS.find((p) => p.id === x.panel).name)}</b><em>Close-up + wide shot</em></div>
-            ${x.type ? `<button class="type" data-retype="${i}">${x.type}</button>` : `<div class="types">${TYPES.map((t) => `<button data-type="${t}" data-i="${i}">${t}</button>`).join('')}</div>`}
-          </div>`).join('') : `<div class="dm-empty card"><b>Nothing tagged yet</b><p>Tap a panel on the map. You take a close-up, then a wide shot. Old damage counts too.</p></div>`}
-          <button class="dm-add" data-action="add"><img src="${A('cam/plus.svg')}" alt="">${d.length ? 'Tap the car map to add another' : 'Tap the car map to start'}</button>
-        </div>
-        <button class="btn" data-go="upright">${d.length ? `Done · ${d.length} damage${d.length > 1 ? 's' : ''}` : 'No damage · continue'}</button>
-      </div>`;
-    },
+    id: 'walk-done', node: '737:58532', title: '360° · all captured', orientation: 'landscape', className: 'vpage wdone',
+    vo: 'All 10 photos are done. Tap Continue.',
+    render: () => `${U.status()}
+      <div class="vrow">
+        <div class="gal">${WALK.map((w, i) => { const c = App.capture(wkey(i + 1)); return `
+          <button class="gi" data-retake="${i + 1}"><span class="gp"><img src="${c ? c.url : w.photo}" alt=""></span><span class="gl">${w.name}</span></button>`; }).join('')}</div>
+        <div class="vside"><div class="top"><p class="lab">${F.label('walk')}</p>
+          <div class="head"><i><img src="${I('check-16-w.svg')}" alt=""></i><p>Completed</p></div>
+          <div class="orb-big">${U.orbit(0, 'all')}</div></div>
+          <div class="bot"><div class="row"><button class="btn flex" data-action="continue">Continue</button></div></div></div>
+      </div>`,
     mount: (el) => el.addEventListener('click', (e) => {
-      const p = e.target.closest('[data-panel]');
-      if (p) { st.dmgDraft = { panel: p.dataset.panel, step: 'close' }; return App.go('dmg-shot'); }
-      const t = e.target.closest('[data-type]');
-      if (t) { st.damages[+t.dataset.i].type = t.dataset.type; return App.rerender(); }
-      const r = e.target.closest('[data-retype]');
-      if (r) { st.damages[+r.dataset.retype].type = null; return App.rerender(); }
-      if (e.target.closest('[data-action="add"]')) el.querySelector('.dmap').classList.add('nudge'), setTimeout(() => el.querySelector('.dmap')?.classList.remove('nudge'), 900);
+      const r = e.target.closest('[data-retake]');
+      if (r) { st.returnTo = 'walk-done'; return App.go('walk-' + r.dataset.retake); }
+      if (e.target.closest('[data-action="continue"]')) next('walk');
     }),
   });
 
-  /* ---------- 31 Damage close-up (653:21881) + wide shot ---------- */
+  /* ---------- Damages (instruction 669:31435 · capture 743:60679 · captured 743:61225 / multiple 743:74173) ---------- */
   App.screen({
-    id: 'dmg-shot', node: '653:21881', title: '31 · Damage close-up / wide shot', orientation: 'landscape', className: 'cam c-wide',
-    vo: () => ((st.dmgDraft || {}).step === 'wide' ? 'Now step back and capture the whole panel.' : 'Now, a close-up of the damage. Next, step back for a wide shot.'),
+    id: 'damages', node: '743:60679', title: 'Damages (capture any, Finish)', orientation: 'landscape', className: 'cam dmg',
+    vo: () => (!st.seen.damages ? "Now, capture any dents, scratches or damages. Tap Skip if there are no damages."
+      : st.damages.length ? 'Got it. Capture the next one, or tap Finish.' : "Go close, don't zoom, and tap Capture. Tap Finish when you're done."),
     render: () => {
-      const dr = st.dmgDraft || { panel: 'rear', step: 'close' };
-      const name = PANELS.find((p) => p.id === dr.panel).name, wide = dr.step === 'wide';
+      const last = st.damages[st.damages.length - 1];
       return U.cam({
-        win: 'wide', pillHtml: `<div class="cpill"><p>${esc(name)} · ${wide ? 'wide shot 2 of 2' : 'close-up 1 of 2'}</p><i><b style="width:${wide ? 100 : 50}%"></b></i></div>`,
-        example: wide ? null : P('dmg-example.jpg'), toast: U.takeToast(),
-        hint: { text: wide ? 'Step back · show the whole panel' : 'Get close · fill the frame with the damage' },
-      });
+        items: F.s2(), cur: 'damages', railCls: 'dark drail',
+        railBottom: `<button class="lthumb" data-action="last" ${last ? '' : 'disabled'}>${last ? `<img src="${last.close.url}" alt="">` : ''}</button>`,
+        extra: `<button class="btn finish" data-action="finish">Finish</button>${st.damages.length ? `<span class="dcount">${st.damages.length} captured</span>` : ''}`,
+      }) + (st.seen.damages ? '' : U.lmodal({
+        title: 'Capture Any Damages', sub: 'Skip if there are no damages', cls: 'dmgm',
+        body: `<div class="dimg"><img src="${IMG('modal-dmg.jpg')}" alt=""></div>`,
+        foot: '<div class="row"><button class="btn flex" data-action="capture-dmg">Capture</button><button class="btn sec" data-action="skip-dmg">Skip</button></div>',
+      }));
     },
-    mount: (el) => {
-      const dr = st.dmgDraft || (st.dmgDraft = { panel: 'rear', step: 'close' });
-      const wide = dr.step === 'wide';
-      return U.mountCam(el, {
-        fallback: P('dmg.jpg'), exit: 'damages',
-        hint: { text: wide ? 'Step back · show the whole panel' : 'Get close · fill the frame with the damage' },
-        live: { ok: wide ? 'Whole panel in frame · hold still' : 'Damage in focus · hold still' },
-        onShot: (cap) => {
-          App.Uploads.add(cap);
-          if (!wide) {
-            dr.close = cap; dr.step = 'wide';
-            U.setToast({ img: cap.url, title: 'Close-up saved', sub: 'Now a wide shot of the panel', undo: { drop: () => { dr.close = null; dr.step = 'close'; }, go: 'dmg-shot' } });
-            return App.rerender();
-          }
-          st.damages.push({ panel: dr.panel, type: null, close: dr.close, wide: cap });
-          st.dmgDraft = null;
-          App.go(App.nextAfter('damages'));
-        },
-      });
-    },
-  });
-
-  /* ---------- 33 Turn upright (653:22018): all captures done; portrait continues to review ---------- */
-  App.screen({
-    id: 'upright', node: '653:22018', title: '33 · Turn upright', orientation: 'landscape', className: 's2-up',
-    turnTo: 'portrait', next: () => 'review',
-    render: () => {
-      const inside = F.s1().filter((x) => App.capture(x.key)).length;
-      const around = (App.capture('vin') ? 1 : 0) + (App.capture('engine') ? 1 : 0) + WALK.filter((_, i) => App.capture(wkey(i + 1))).length;
-      return `${U.status()}
-      <div class="up-body" data-go="review">
-        <span class="tbox"><img src="${A('s0/ic-rotate.svg')}" alt=""></span>
-        <p class="up-h">All captures done</p>
-        <p class="up-s">Turn your phone upright to review. We continue as soon as it's in portrait.</p>
-        <div class="up-chips"><span>✓ Inside the car · ${inside}</span><span>✓ Around the car · ${around}</span>${st.damages.length ? `<span>✓ Damages · ${st.damages.length}</span>` : ''}</div>
-        <p class="up-tap device-only">Desktop preview: click to continue</p>
-      </div>`;
-    },
-    mount: () => { if (!App.state.rotLock) return null; const t = setTimeout(() => App.go('review'), 2500); return () => clearTimeout(t); },
+    mount: (el) => U.mountCam(el, {
+      fallback: IMG('cam-dmg.jpg'),
+      onShot: (cap) => { App.Uploads.add(cap); st.damages.push({ close: cap }); App.rerender(); },
+      onAction: (act) => {
+        if (act === 'capture-dmg') { st.seen.damages = true; el.querySelector('.ov').remove(); App.VO.speak("Go close, don't zoom, and tap Capture. Tap Finish when you're done."); }
+        if (act === 'skip-dmg') { st.seen.damages = true; st.damages = []; next('damages'); }
+        if (act === 'finish') next('damages');
+        if (act === 'last' && st.damages.length) { const d = st.damages[st.damages.length - 1]; U.fullscreen(el, { cap: d.close, src: d.close.url, label: `Damage ${st.damages.length}` }); }
+      },
+    }),
   });
 })();

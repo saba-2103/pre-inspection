@@ -1,7 +1,7 @@
 # ACME Car Pre-Inspection — prototype
 
 End-to-end, clickable prototypes of the Figma file "Anaira-Pre-Inspection". The root page lists every version;
-each version is a self-contained app in its own folder (`v1/` = section "ACME - V1", `v2/` = page "V2", the redesign).
+each version is a self-contained app in its own folder (`v1/` = section "ACME - V1", `v2/` = section "✅ Anaira - V2", the Anaira redesign).
 Live camera, real photo captures, real video recordings (with audio), real permission prompts and voice-over.
 
 ## Try it on a phone (camera needs HTTPS)

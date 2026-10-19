@@ -1,5 +1,24 @@
-/* V2 · Stage 1 · Inside the car (landscape) — values from Figma 648:21105. Shared camera chrome lives in base.css. */
-/* Card / Paper RC toggle replaces the progress pill on the first RC screen (649:21404 / 649:21444) */
-.rc-toggle { position: absolute; z-index: 5; left: 50%; top: 44px; transform: translateX(-50%); display: flex; gap: 4px; padding: 4px; border-radius: 12px; background: rgba(12,17,38,.62); }
-.rc-toggle button { padding: 7px 14px; border-radius: 9px; font: 600 13px/normal var(--ff); color: #fff; white-space: nowrap; }
-.rc-toggle button.on { background: #fff; color: var(--brand); }
+/* V2 · Stage 1 · Inside the car (landscape) — values from Figma 669:30753 §4 */
+
+/* RC type (727:53049) */
+.lmodal.rctype { gap: 20px; }
+.rcopts { flex: 1 0 0; min-height: 1px; width: 100%; display: flex; gap: 12px; }
+.rco { flex: 1 0 0; min-width: 1px; height: 100%; border-radius: 16px; padding: 12px; display: flex; flex-direction: column; align-items: center; gap: 10px; overflow: hidden; background: var(--subtle); text-align: left; }
+.rco.on { background: var(--page); box-shadow: inset 0 0 0 1px var(--brand); }
+.rco .rh { width: 100%; display: flex; align-items: center; gap: 4px; }
+.rco:not(.on) .rh, .rco:not(.on) .rp, .rco:not(.on) .rcd { opacity: .8; }
+.rco b { flex: 1; font: 600 14px/1.2 var(--ff-h); color: var(--text); }
+.rco.on b { color: var(--brand); }
+.rco .rh img { width: 20px; height: 20px; }
+.rco .rp { width: 190px; height: 279px; flex-shrink: 0; box-shadow: 0 5px 11px rgba(0,0,0,.1), 0 19px 19px rgba(0,0,0,.1); }
+.rco .rp img, .rco .rcd img { width: 100%; height: 100%; object-fit: cover; }
+.rco .rcd { flex: 1 0 0; min-height: 1px; aspect-ratio: 800/520; box-shadow: 0 5px 11px rgba(0,0,0,.1), 0 19px 19px rgba(0,0,0,.1); margin: auto 0; }
+
+/* document instruction modals (669:31424 paper · 669:31416 card front · 669:31408 card back) */
+.lmodal.doc .dimg { flex: 1 0 0; min-height: 1px; display: flex; align-items: center; justify-content: center; }
+.lmodal.doc .dimg img { box-shadow: 0 5px 11px rgba(0,0,0,.1), 0 19px 19px rgba(0,0,0,.1), 0 44px 26px rgba(0,0,0,.1); }
+.lmodal.doc.paper .dimg img { height: 205px; width: auto; transform: rotate(-90deg); }
+.lmodal.doc.card .dimg img { height: 100%; width: auto; aspect-ratio: 800/520; }
+
+/* video screens: dark rail behind the record button */
+.cam.vid .rail { padding: 0 20px; }

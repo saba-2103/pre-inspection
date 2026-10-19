@@ -1,8 +1,0 @@
-<svg preserveAspectRatio="none" overflow="visible" style="display: block;" width="520" height="28" viewBox="0 0 520 28" fill="none" xmlns="http://www.w3.org/2000/svg">
-<g id="Frame">
-<path id="Vector" d="M10 14H500" stroke="white" stroke-opacity="0.35" stroke-width="3" stroke-linecap="round" stroke-dasharray="2 8"/>
-<path id="Vector_2" d="M10 14H300" stroke="#32D583" stroke-width="3" stroke-linecap="round"/>
-<path id="Vector_3" d="M300 24C305.523 24 310 19.5228 310 14C310 8.47715 305.523 4 300 4C294.477 4 290 8.47715 290 14C290 19.5228 294.477 24 300 24Z" fill="#32D583" stroke="white" stroke-width="3"/>
-<path id="Vector_4" d="M500 6L512 14L500 22" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
-</g>
-</svg>

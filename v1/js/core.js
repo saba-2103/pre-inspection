@@ -198,7 +198,7 @@
   addEventListener('touchend', () => {
     if (ptrY0 === null) return;
     ptrY0 = null;
-    if (ptrDy >= PTR_TRIGGER) { ptr.classList.add('spin'); location.reload(); }
+    if (ptrDy >= PTR_TRIGGER) { ptr.classList.add('spin'); location.href = '../'; /* back to the version launcher */ }
     else ptrSet(0, true);
   });
   App.rerender = () => { lastShown = null; render(); };

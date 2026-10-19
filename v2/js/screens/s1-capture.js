@@ -1,139 +1,145 @@
-/* V2 · Stage 1 · Inside the car (landscape): RC (card/paper toggle) → verdict → RC back → verdict → odometer → verdict
-   → windshield video → sunroof video. Figma section 648:21105. Good videos save with an undo toast on the next screen. */
+/* V2 · Stage 1 · Inside the car (landscape): RC type → RC capture(s) → odometer → windshield / sunroof videos.
+   Each item: instruction modal (once) → capture → review panel (Captured / Error / Recorded). Figma 669:30753 §4.
+   U.photoStep / U.videoStep are reused by Stage 2. */
 (function () {
-  const { A } = U;
-  const P = (f) => A('photo/' + f);
+  const { A, I, esc } = U;
+  const IMG = (f) => A('img/' + f);
   const F = App.flow;
-  const paper = () => App.state.rcType === 'paper';
-  const pill = (key, label, stage = 's1') => ({ label, ...F.pos(F[stage](), key) });
+  const st = App.state;
+  st.seen = st.seen || {};
+  const paper = () => st.rcType === 'paper';
   const next = (key) => App.go(App.nextAfter(F.after(key)));
+  const list = (stage) => (stage === 's2' ? F.s2() : F.s1());
 
-  /* small still for toasts: the current camera frame, or the screen's sample still */
-  U.thumb = (fallback) => {
-    try {
-      const f = App.Camera.frame();
-      if (f && App.Camera.source === App.Camera.video) {
-        const c = document.createElement('canvas'); c.width = 160; c.height = Math.round((f.height / f.width) * 160);
-        c.getContext('2d').drawImage(f, 0, 0, c.width, c.height);
-        return c.toDataURL('image/jpeg', 0.7);
-      }
-    } catch (e) {}
-    return fallback;
-  };
-
-  /* ---------- photo capture + verdict pair ---------- */
-  const photoItem = (U.photoItem = function (o) {
-    // o = { id, key(), label(), win, fallback(), example, target, hint, ok(), caption(), ask, box, verdictNode, node, title, pillHtml? }
+  /* ---------- photo item: [modal] → camera → review ----------
+     o = { id, node, title, stage, key(), win, fallback(), badge, modal() → {html, vo} | null, vo, ask(), mode, zoom, okNode } */
+  U.photoStep = function (o) {
+    const modal = () => (o.modal && !st.seen[o.id] ? o.modal() : null);
     App.screen({
-      id: o.id, node: o.node, title: o.title, orientation: 'landscape', className: `cam c-${o.win}`,
-      vo: () => o.caption(),
-      render: () => U.cam({
-        win: o.win, pill: o.pillHtml ? null : pill(o.key(), o.label(), o.stage), pillHtml: o.pillHtml && o.pillHtml(),
-        target: o.target, example: o.example, hint: o.hint, toast: U.takeToast(),
-      }),
+      id: o.id, node: o.node, title: o.title, orientation: 'landscape', className: 'cam',
+      vo: () => { const m = modal(); return m ? m.vo : o.vo; },
+      render: () => { const m = modal(); return U.cam({ items: list(o.stage), cur: o.stage === 's2' ? o.step || o.key() : o.key(), win: o.win, badge: o.badge, zoom: o.zoom }) + (m ? m.html : ''); },
       mount: (el) => {
+        if (!st.recT0) st.recT0 = Date.now(); // the inspection recording runs from the first capture
         if (o.mount) o.mount(el);
         return U.mountCam(el, {
-          fallback: o.fallback(), exit: o.exit || 'inside', hint: o.hint, live: { ok: o.ok() },
+          fallback: o.fallback(),
           onShot: (cap) => { App.save(o.key(), cap); App.go(o.id + '-ok'); },
-        });
-      },
-    });
-    App.screen({
-      id: o.id + '-ok', node: o.verdictNode, title: o.title.replace('capture', 'verdict'), orientation: 'landscape', className: 'verdict',
-      render: () => {
-        const p = pill(o.key(), o.label(), o.stage);
-        return U.verdict({ label: `${p.label} · ${p.i} of ${p.n}`, cap: App.capture(o.key()), fallback: o.fallback(), ask: o.ask, box: o.box });
-      },
-      mount: (el) => U.mountVerdict(el, {
-        onUse: () => next(o.key()),
-        onRetake: () => { App.drop(o.key()); App.go(o.id); },
-      }),
-    });
-  });
-
-  // 08 RC front · card (649:21404) / 08b paper (649:21444) → 09 verdict (649:21502)
-  photoItem({
-    id: 'rc', node: '649:21404', verdictNode: '649:21502', title: '08 · RC front capture (card / paper toggle)', win: 'card',
-    key: () => (paper() ? 'rcPaper' : 'rcFront'), label: () => (paper() ? 'Paper RC' : 'RC front'),
-    pillHtml: () => `<div class="rc-toggle"><button data-rc="card" class="${paper() ? '' : 'on'}">Card RC</button><button data-rc="paper" class="${paper() ? 'on' : ''}">Paper RC</button></div>`,
-    fallback: () => P(paper() ? 'rc-paper.jpg' : 'rc-front.jpg'),
-    hint: { text: 'Fit the RC inside the frame' },
-    ok: () => (paper() ? 'Paper RC detected · hold still' : 'Front side detected · hold still'),
-    caption: () => (paper() ? 'Now, capture your paper RC. Lay it flat with all four corners inside the frame.' : 'Now, capture the front of your RC card. Have a paper RC? Switch at the top.'),
-    ask: 'Can you read the reg. number? Tap Use photo.',
-    mount: (el) => el.querySelector('.rc-toggle').addEventListener('click', (e) => {
-      const b = e.target.closest('[data-rc]');
-      if (!b || b.dataset.rc === App.state.rcType) return;
-      App.state.rcType = b.dataset.rc;
-      App.rerender();
-    }),
-  });
-  // 10 RC back · capture (649:21554) → 11 verdict (649:21616)
-  photoItem({
-    id: 'rc-back', node: '649:21554', verdictNode: '649:21616', title: '10 · RC back capture', win: 'card',
-    key: () => 'rcBack', label: () => 'RC back', fallback: () => P('rc-back.jpg'),
-    hint: { text: 'Flip the card · fit it inside the frame' },
-    ok: () => 'Back side detected · hold still',
-    caption: () => 'Now, flip the card and capture the back.',
-    ask: 'Can you read the owner name? Tap Use photo.',
-  });
-  // 12 Odometer · coach (649:21668, too dark 649:21729) → 13 verdict (649:21789, blurry 649:21839)
-  photoItem({
-    id: 'odo', node: '649:21668', verdictNode: '649:21789', title: '12 · Odometer capture (coach)', win: 'wide',
-    key: () => 'odometer', label: () => 'Odometer', fallback: () => P('odo.jpg'), example: P('odo.jpg'),
-    target: { l: 74.2, t: 47.9, w: 17.6, h: 15.4, label: 'km reading' },
-    hint: { text: 'Fit the km reading inside the box' },
-    ok: () => 'km reading is clear · hold still',
-    caption: () => 'Now, capture the km reading. Keep it clear, inside the frame.',
-    ask: 'Can you read the km clearly? Tap Use photo.',
-    box: { l: 64.4, t: 51.3, w: 22.4, h: 13.3 },
-  });
-
-  /* ---------- video items: windshield (649:21892) and sunroof (649:21963) ---------- */
-  const videoItem = (U.videoItem = function (o) {
-    App.screen({
-      id: o.id, node: o.node, title: o.title, orientation: 'landscape', className: 'cam c-wide vid',
-      vo: o.caption,
-      render: () => U.cam({
-        win: 'wide', pill: pill(o.key, o.label, o.stage), shutter: 'video', hint: o.hint, toast: U.takeToast(),
-        topLeft: `<div class="rec-pill"><i></i><b>REC 0:00</b></div>${o.skip ? `<button class="skip-pill" data-action="skip">No sunroof? Skip</button>` : ''}`,
-        extra: o.noPace ? '' : `<div class="pace"><i class="trk"></i><i class="done"></i><i class="dot"></i><svg class="arrow" viewBox="0 0 14 16"><path d="M2 2l10 6-10 6" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></div>`,
-      }),
-      mount: (el) => {
-        if (o.skip) el.querySelector('[data-action="skip"]').addEventListener('click', () => next(o.key));
-        return U.mountCam(el, {
-          fallback: P(o.photo), exit: o.exit || 'inside', hint: o.hint, live: { ok: o.ok },
-          lockHint: () => el.dataset.rec === 'on',
-          video: {
-            min: 10,
-            onStart: () => {
-              el.querySelector('[data-hint]').innerHTML = U.hintHtml({ kind: 'ok', text: o.pace });
-              el.querySelector('[data-caption]').textContent = o.during;
-            },
-            onDone: (cap) => {
-              cap.poster = cap.poster || U.thumb(P(o.photo));
-              App.save(o.key, cap);
-              U.setToast({ img: cap.poster, title: `${o.label} saved`, sub: `${Math.round(cap.duration)} s · ${o.savedNote || 'steady pace'}`, undo: { drop: () => App.drop(o.key), go: o.id } });
-              next(o.key);
-            },
+          onAction: (act) => {
+            if (act === 'got-it') { st.seen[o.id] = true; el.querySelector('.ov').remove(); App.VO.speak(o.vo); }
+            if (o.onAction) o.onAction(act, el);
           },
         });
       },
     });
+    const vopts = () => ({ label: F.label(o.step || o.key()), cap: App.capture(o.key()), fallback: o.fallback(), ask: o.ask(), mode: o.mode });
+    App.screen({
+      id: o.id + '-ok', node: o.okNode, title: o.title + ' · review', orientation: 'landscape', className: 'vpage',
+      vo: () => U.verdictVO(vopts()),
+      render: () => U.verdict(vopts()),
+      mount: (el) => U.mountVerdict(el, {
+        cap: App.capture(o.key()), fsLabel: F.label(o.step || o.key()).split(' · ')[0],
+        onUse: () => next(o.step || o.key()),
+        onRetake: () => { App.drop(o.key()); App.go(o.id); },
+        onSkip: () => { App.drop(o.key()); next(o.step || o.key()); },
+      }),
+    });
+  };
+
+  /* ---------- video item: modal → record (3-2-1, timer) → recorded panel ----------
+     o = { id, node, title, stage, key, modal: {title, pic, pan, vo}, vo, during, badge, badgeOn, fallback, chips, ask, min } */
+  U.videoStep = function (o) {
+    const modal = () => (!st.seen[o.id] ? o.modal : null);
+    App.screen({
+      id: o.id, node: o.node, title: o.title, orientation: 'landscape', className: 'cam vid',
+      vo: () => (modal() ? o.modal.vo : o.vo),
+      render: () => U.cam({ items: list(o.stage), cur: o.key, shutter: 'video', railCls: 'dark', badge: o.badge })
+        + (modal() ? U.lmodal({ title: o.modal.title, pic: o.modal.pic, pan: o.modal.pan, foot: '<button class="btn full" data-action="got-it">Got it</button>' }) : ''),
+      mount: (el) => U.mountCam(el, {
+        fallback: o.fallback,
+        onAction: (act) => { if (act === 'got-it') { st.seen[o.id] = true; el.querySelector('.ov').remove(); App.VO.speak(o.vo); } },
+        video: {
+          min: o.min || 10, during: o.during, badgeOn: o.badgeOn,
+          onDone: (cap) => { cap.poster = cap.poster || U.thumb(o.fallback); App.save(o.key, cap); App.go(o.id + '-ok'); },
+        },
+      }),
+    });
+    const vopts = () => ({ label: F.label(o.key), cap: App.capture(o.key), poster: (App.capture(o.key) || {}).poster || o.fallback, fallback: o.fallback, ask: o.ask, chips: o.chips });
+    App.screen({
+      id: o.id + '-ok', node: o.okNode, title: o.title + ' · recorded', orientation: 'landscape', className: 'vpage',
+      vo: () => U.verdictVO(vopts()),
+      render: () => U.verdict(vopts()),
+      mount: (el) => U.mountVerdict(el, {
+        cap: App.capture(o.key), fsLabel: o.label,
+        onUse: () => next(o.key),
+        onRetake: () => { App.drop(o.key); App.go(o.id); },
+      }),
+    });
+  };
+
+  /* ---------- RC type (727:53032 / paper 727:53049 / card 727:53066) + RC capture ---------- */
+  const rcTypeModal = () => {
+    const opt = (t, label, img) => {
+      const on = st.rcType === t;
+      return `<button class="rco ${on ? 'on' : ''}" data-action="rc-${t}"><span class="rh"><b>${label}</b><img src="${I(on ? 'check-20-brand.svg' : 'dot-20.svg')}" alt=""></span>${img}</button>`;
+    };
+    return {
+      vo: 'Do you have a RC paper or RC card?',
+      html: U.lmodal({
+        title: 'Select your type of RC', cls: 'rctype',
+        body: `<div class="rcopts">${opt('paper', 'RC Paper', `<span class="rp"><img src="${IMG('rc-paper.png')}" alt=""></span>`)}${opt('card', 'RC Card', `<span class="rcd"><img src="${IMG('rc-card-front.png')}" alt=""></span>`)}</div>`,
+        foot: '<button class="btn full" data-action="rc-continue">Continue</button>',
+      }),
+    };
+  };
+  const docModal = (title, img, cls) => U.lmodal({ title, cls: 'doc ' + cls, body: `<span class="dimg"><img src="${IMG(img)}" alt=""></span>`, foot: '<button class="btn full" data-action="got-it">Got it</button>' });
+  U.photoStep({
+    id: 'rc', node: '688:66438', okNode: '678:65248', title: 'RC capture (type → instruction → capture)', stage: 's1', win: 'rc',
+    key: () => (paper() ? 'rcPaper' : 'rcFront'),
+    fallback: () => IMG(paper() ? 'shot-rc-paper.jpg' : 'cam-rc-card.jpg'),
+    badge: 'Fit the RC in the frame and tap the shutter',
+    modal: () => (!st.rcChosen ? rcTypeModal()
+      : paper() ? { vo: 'Now, capture your paper RC.', html: docModal('Capture RC Paper', 'rc-paper.png', 'paper') }
+        : { vo: 'Now, capture the front of your RC card.', html: docModal('Capture RC Card (Front)', 'rc-card-front.png', 'card') }),
+    vo: 'Keep it flat, inside the frame, and tap Capture.',
+    ask: () => 'Can you read the reg. number? Tap Use photo.', mode: 'retake',
+    onAction: (act) => {
+      if (act === 'rc-paper' || act === 'rc-card') { st.rcType = act.slice(3); App.rerender(); }
+      if (act === 'rc-continue') { st.rcChosen = true; App.rerender(); }
+    },
   });
-  videoItem({
-    id: 'ws', key: 'windshield', label: 'Windshield', node: '649:21892', title: '14 · Windshield video', photo: 'ws.jpg',
-    hint: { text: 'Start at the left edge, then tap Record' }, ok: 'Windshield in frame · tap Record',
-    pace: 'Good pace · keep moving right',
-    caption: 'Now, record the windshield. Start at the left edge, then tap Record.',
-    during: 'Keep moving slowly to the right edge of the windshield.',
+  U.photoStep({
+    id: 'rc-back', node: '688:66437', okNode: '678:65329', title: 'RC card back capture', stage: 's1', win: 'rc',
+    key: () => 'rcBack', fallback: () => IMG('cam-rc-back.jpg'),
+    badge: 'Fit the RC in the frame and tap the shutter',
+    modal: () => ({ vo: 'Now, flip the card and capture the back.', html: docModal('Capture RC Card (Back)', 'rc-card-back.png', 'card') }),
+    vo: 'Keep it inside the frame, and tap Capture.',
+    ask: () => 'Can you read the owner name or reg. number? Tap Use photo.', mode: 'retake',
   });
-  videoItem({
-    id: 'roof', key: 'roof', label: 'Sunroof', node: '649:21963', title: '15 · Sunroof video', photo: 'roof.jpg', skip: true,
-    hint: { text: 'Start at the front edge, then tap Record' }, ok: 'Sunroof in frame · tap Record',
-    pace: 'Good pace · keep moving back',
-    caption: 'Now, the sunroof. Start at the front edge and pan slowly to the back.',
-    during: 'Keep moving slowly to the back edge of the sunroof.',
+
+  /* ---------- Odometer (instruction 669:30961 · capture 688:66436 · zoom 678:66058 · captured 678:65565) ---------- */
+  U.photoStep({
+    id: 'odo', node: '688:66436', okNode: '678:65565', title: 'Odometer capture (zoom, too dark)', stage: 's1', win: 'odo', zoom: true,
+    key: () => 'odometer', fallback: () => IMG('cam-odo.jpg'),
+    badge: 'Fit the dashboard in the frame and tap the shutter',
+    modal: () => ({ vo: 'Now, capture the odometer reading.', html: U.lmodal({ title: 'Capture Odometer', pic: IMG('cam-odo.jpg'), foot: '<button class="btn full" data-action="got-it">Got it</button>' }) }),
+    vo: 'Keep the reading inside the frame, and tap Capture.',
+    ask: () => 'Can you read the km clearly? Tap Use photo.', mode: 'anyway',
+  });
+
+  /* ---------- Windshield (669:31431 → 741:59757 → 669:31371 → 669:31377 → 731:56574) and Sunroof (669:31462 …) ---------- */
+  U.videoStep({
+    id: 'ws', node: '741:59757', okNode: '731:56574', title: 'Windshield video', stage: 's1', key: 'windshield', label: 'Windshield',
+    modal: { title: 'Record the Windshield', pic: IMG('modal-ws.jpg'), pan: true, vo: 'Now, record the windshield.' },
+    vo: 'Tap Record and pan slowly to capture completely.', during: 'Keep moving slowly.',
+    badge: 'Tap Record and pan slowly to capture completely.', badgeOn: 'Pan slowly to capture completely.',
+    fallback: IMG('cam-ws.jpg'), chips: ['Steady', 'Well lit'], ask: 'Does it cover the whole windshield? Tap Use video.',
+  });
+  U.videoStep({
+    id: 'roof', node: '741:59756', okNode: '731:56646', title: 'Sunroof video', stage: 's1', key: 'roof', label: 'Sunroof',
+    modal: { title: 'Record the Sunroof', pic: IMG('modal-roof.jpg'), pan: true, vo: 'Now, record the sunroof.' },
+    vo: 'Tap Record and pan slowly to capture completely.', during: 'Keep moving slowly.',
+    badge: 'Tap Record and pan slowly to capture completely.', badgeOn: 'Pan slowly to capture completely.',
+    fallback: IMG('cam-roof.jpg'), chips: ['Steady', 'Well lit'], ask: 'Does it cover the whole sunroof? Tap Use video.',
   });
 })();

@@ -1,0 +1,19 @@
+<svg preserveAspectRatio="none" overflow="visible" style="display: block;" width="60" height="60" viewBox="0 0 60 60" fill="none" xmlns="http://www.w3.org/2000/svg">
+<g id="Logomark" clip-path="url(#clip0_0_318)">
+<path id="Shape" d="M27.3912 28.4928L7.0968 48.8232C8.9352 51.1488 11.1024 53.1984 13.5336 54.9L31.5912 36.8112C32.9064 35.4936 33.3504 33.5088 32.6424 31.7856C31.0536 27.9216 27.7176 25.116 23.712 24.5568C23.1432 24.4776 23.1432 23.58 23.712 23.5008C27.6888 22.9488 31.008 20.1768 32.6088 16.3536C33.3312 14.628 32.8872 12.6312 31.5648 11.3088L21.42 1.1496C18.4272 2.1336 15.6408 3.5688 13.14 5.3784L27.3744 19.6368H2.3712C1.3608 22.4208 0.7464 25.3968 0.5952 28.4928H27.3912Z" fill="url(#paint0_radial_0_318)"/>
+<path id="Shape_2" d="M34.7136 0.1608V12.2736C35.556 18.156 39.6 22.74 44.7048 23.4984C45.2856 23.5848 45.2856 24.5664 44.7048 24.6528C39.5976 25.4136 35.556 29.9976 34.7136 35.88V59.8416C37.8576 59.256 40.8336 58.1904 43.5552 56.712V34.7592L54.8472 46.0704C56.5224 43.3872 57.7872 40.4256 58.5624 37.2696L49.7952 28.488H59.4048C59.2536 25.392 58.6368 22.416 57.6264 19.632H49.812L55.0992 14.3352C53.5584 11.7768 51.6504 9.4656 49.4496 7.4712L43.5576 13.3728V3.2904C40.836 1.812 37.86 0.7464 34.716 0.1608H34.7136Z" fill="url(#paint1_radial_0_318)"/>
+</g>
+<defs>
+<radialGradient id="paint0_radial_0_318" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(56.4072 -1.4088) scale(63.5352)">
+<stop stop-color="#97AAE3"/>
+<stop offset="1" stop-color="#1C3095"/>
+</radialGradient>
+<radialGradient id="paint1_radial_0_318" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(56.4072 -1.4088) scale(63.5352 63.5352)">
+<stop stop-color="#97AAE3"/>
+<stop offset="1" stop-color="#1C3095"/>
+</radialGradient>
+<clipPath id="clip0_0_318">
+<rect width="60" height="60" fill="white"/>
+</clipPath>
+</defs>
+</svg>

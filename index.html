@@ -7,23 +7,51 @@
 <title>ACME Pre-Inspection Prototypes</title>
 <link rel="stylesheet" href="v1/css/fonts.css">
 <style>
-  :root { --brand: #1c3095; --heading: #002767; --text: #212529; --muted: #757575; --line: #e5e5e5; --bg: #f4f5f7; }
+  :root { --brand: #1c3095; --brand2: #3554d1; --ink: #0b1b4d; --text: #101828; --body: #344054; --muted: #667085; --line: #eaecf0; --bg: #f4f5f7; --ok: #039855; --ok-bg: #ecfdf3; }
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body { min-height: 100vh; background: var(--bg); color: var(--text); font-family: 'Inter', sans-serif; -webkit-font-smoothing: antialiased; }
-  .wrap { max-width: 440px; margin: 0 auto; padding: max(24px, env(safe-area-inset-top)) 16px 32px; display: flex; flex-direction: column; gap: 20px; }
-  .top { display: flex; flex-direction: column; align-items: center; gap: 12px; text-align: center; }
+  .wrap { max-width: 460px; margin: 0 auto; padding: max(28px, env(safe-area-inset-top)) 16px 32px; display: flex; flex-direction: column; gap: 22px; }
+  .top { display: flex; flex-direction: column; align-items: center; gap: 10px; text-align: center; }
   .top img { width: 33px; height: 36px; }
-  .top h1 { font: 700 22px/1.2 'Poppins', sans-serif; color: var(--heading); }
+  .top h1 { font: 600 24px/1.2 'Poppins', sans-serif; color: var(--ink); }
   .top p { font-size: 13px; color: var(--muted); }
-  .list { display: flex; flex-direction: column; gap: 12px; }
-  .card { display: flex; gap: 14px; align-items: center; padding: 16px; background: #fff; border: 1px solid var(--line); border-radius: 12px; color: inherit; text-decoration: none; transition: border-color .15s, box-shadow .15s; }
-  .card:hover, .card:focus-visible { border-color: var(--brand); box-shadow: 0 4px 16px rgba(28,48,149,.1); outline: none; }
-  .tag { flex-shrink: 0; width: 48px; height: 48px; border-radius: 10px; background: #e7eefc; color: var(--heading); display: flex; align-items: center; justify-content: center; font: 700 16px/1 'Poppins', sans-serif; }
-  .txt { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
-  .txt b { font: 600 15px/1.3 'Poppins', sans-serif; color: var(--heading); }
-  .txt span { font-size: 12px; line-height: 1.4; color: var(--muted); }
-  .go { flex-shrink: 0; color: var(--brand); font-size: 20px; }
-  .note { font-size: 11px; color: var(--muted); text-align: center; }
+  .list { display: flex; flex-direction: column; gap: 16px; }
+
+  /* version card */
+  .card { display: block; background: #fff; border: 1px solid var(--line); border-radius: 20px; overflow: hidden; color: inherit; text-decoration: none; box-shadow: 0 1px 2px rgba(16,24,40,.04); transition: transform .15s, box-shadow .15s, border-color .15s; }
+  .card:hover, .card:focus-visible { transform: translateY(-2px); box-shadow: 0 12px 28px rgba(28,48,149,.12); border-color: #c7d2fe; outline: none; }
+  .card:active { transform: translateY(0); }
+  .hero { position: relative; padding: 18px 18px 16px; background: #eef1f6; display: flex; flex-direction: column; gap: 10px; overflow: hidden; }
+  .card.v2 .hero { background: linear-gradient(135deg, var(--brand) 0%, var(--brand2) 100%); color: #fff; }
+  .hero::after { content: ''; position: absolute; right: -40px; top: -60px; width: 180px; height: 180px; border-radius: 50%; background: rgba(255,255,255,.35); pointer-events: none; }
+  .card.v2 .hero::after { background: rgba(255,255,255,.08); }
+  .row { display: flex; align-items: center; gap: 10px; position: relative; z-index: 1; }
+  .ver { width: 44px; height: 44px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font: 700 16px/1 'Poppins', sans-serif; background: #fff; color: var(--ink); flex-shrink: 0; box-shadow: 0 1px 2px rgba(16,24,40,.06); }
+  .card.v2 .ver { background: rgba(255,255,255,.16); color: #fff; box-shadow: inset 0 0 0 1px rgba(255,255,255,.25); }
+  .ttl { flex: 1; min-width: 0; }
+  .ttl b { display: block; font: 600 17px/1.25 'Poppins', sans-serif; color: var(--ink); }
+  .card.v2 .ttl b { color: #fff; }
+  .ttl span { font-size: 12px; color: var(--muted); }
+  .card.v2 .ttl span { color: rgba(255,255,255,.75); }
+  .pill { font: 600 11px/1 'Inter', sans-serif; padding: 6px 9px; border-radius: 99px; background: #fff; color: var(--body); white-space: nowrap; }
+  .card.v2 .pill { background: rgba(255,255,255,.18); color: #fff; }
+  .desc { position: relative; z-index: 1; font-size: 13px; line-height: 1.45; color: var(--body); }
+  .card.v2 .desc { color: rgba(255,255,255,.88); }
+
+  .metrics { display: grid; grid-template-columns: 1fr 1fr; }
+  .m { padding: 14px 16px; display: flex; flex-direction: column; gap: 4px; border-top: 1px solid var(--line); }
+  .m:nth-child(odd) { border-right: 1px solid var(--line); }
+  .mv { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+  .mv b { font: 600 24px/1 'Poppins', sans-serif; color: var(--ink); letter-spacing: -.5px; }
+  .delta { font: 600 11px/1 'Inter', sans-serif; padding: 4px 6px; border-radius: 6px; background: var(--ok-bg); color: var(--ok); white-space: nowrap; }
+  .ml { font-size: 12px; line-height: 1.3; color: var(--muted); }
+  .feats { display: flex; flex-wrap: wrap; gap: 6px; padding: 14px 16px 0; border-top: 1px solid var(--line); }
+  .feats span { font: 500 11px/1 'Inter', sans-serif; padding: 6px 9px; border-radius: 99px; background: #f2f4f7; color: var(--body); }
+  .card.v2 .feats span { background: #eef2ff; color: var(--brand); }
+  .open { display: flex; align-items: center; justify-content: space-between; padding: 14px 16px 16px; font: 600 14px/1 'Inter', sans-serif; color: var(--brand); }
+  .open i { font-style: normal; font-size: 18px; transition: transform .15s; }
+  .card:hover .open i { transform: translateX(3px); }
+  .note { font-size: 11px; line-height: 1.5; color: var(--muted); text-align: center; }
 </style>
 </head>
 <body>
@@ -31,22 +59,43 @@
     <div class="top">
       <img src="v1/assets/core/logo.svg" alt="ACME">
       <h1>Car Pre-Inspection</h1>
-      <p>Prototype versions — tap one to open it</p>
+      <p>Prototype versions · tap a card to open it</p>
     </div>
     <div class="list" id="list"></div>
-    <p class="note">Internal · each version opens at its first screen; refresh inside a version restarts it.</p>
+    <p class="note">V1 numbers from the UX audit in Figma (“UX Audit &amp; Redesign”); V2 counted on the built flow. Pull to refresh inside a version to come back here.</p>
   </main>
   <script>
-    // One entry per version; each lives in its own folder (v1/, v2/, …)
-    const VERSIONS = [
-      { id: 'V1', path: 'v1/', name: 'Current flow', desc: 'Figma “ACME - V1” · WhatsApp → interior → exterior → review & submit' },
-      { id: 'V2', path: 'v2/', name: 'Redesigned flow', desc: 'Figma page “V2” · one rotation per stage, live checks, captions, auto-advance walk-around' },
+    // One entry per version; each lives in its own folder (v1/, v2/, …). `metrics` values come from the Figma UX audit;
+    // `base` on a later version shows the change against V1.
+    const METRICS = [
+      ['taps', 'Taps before the first photo'], ['rot', 'Phone rotations'], ['screens', 'Screens on the happy path'], ['live', 'Captures with live quality checks'],
     ];
+    const VERSIONS = [
+      {
+        id: 'V1', path: 'v1/', name: 'Current flow', sub: 'Figma “ACME - V1”', tag: 'Baseline',
+        desc: 'WhatsApp → onboarding checklist → interior → exterior → review & submit, with an instruction modal before every capture.',
+        metrics: { taps: '22', rot: '4', screens: '~70', live: '0' },
+        feats: ['Voice-over', 'Step-by-step checklist', 'Review after each shot'],
+      },
+      {
+        id: 'V2', path: 'v2/', name: 'Anaira redesign', sub: 'Figma “Anaira - V2”', tag: 'Redesign',
+        desc: 'One rotation per stage, a stage stepper on every capture, live frame checks, an orbit-guided 360° walk-around and uploads that run in the background.',
+        metrics: { taps: '18', rot: '2', screens: '~37', live: '15' },
+        base: { taps: 22, rot: 4, screens: 70, live: 0 },
+        feats: ['Voice guide + progress ring', 'Live frame checks', '360° orbit', 'Background uploads', 'Voice note'],
+      },
+    ];
+    const delta = (v, b) => { const n = parseFloat(String(v).replace('~', '')); return b ? `−${Math.round((1 - n / b) * 100)}%` : `+${n}`; };
     document.getElementById('list').innerHTML = VERSIONS.map((v) => `
-      <a class="card" href="${v.path}">
-        <div class="tag">${v.id}</div>
-        <div class="txt"><b>${v.name}</b><span>${v.desc}</span></div>
-        <div class="go">›</div>
+      <a class="card ${v.id.toLowerCase()}" href="${v.path}">
+        <div class="hero">
+          <div class="row"><span class="ver">${v.id}</span><div class="ttl"><b>${v.name}</b><span>${v.sub}</span></div><span class="pill">${v.tag}</span></div>
+          <p class="desc">${v.desc}</p>
+        </div>
+        <div class="metrics">${METRICS.map(([k, label]) => `
+          <div class="m"><div class="mv"><b>${v.metrics[k]}</b>${v.base ? `<span class="delta">${delta(v.metrics[k], v.base[k])}</span>` : ''}</div><span class="ml">${label}</span></div>`).join('')}</div>
+        <div class="feats">${v.feats.map((f) => `<span>${f}</span>`).join('')}</div>
+        <div class="open">Open ${v.id}<i>→</i></div>
       </a>`).join('');
   </script>
 </body>
