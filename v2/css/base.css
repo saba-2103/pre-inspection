@@ -58,6 +58,7 @@ html.framed .pg::before { top: 90px; }
 .ptitle .s { font: 400 16px/1.5 var(--ff); color: var(--body); }
 .abar { flex-shrink: 0; display: flex; flex-direction: column; align-items: center; gap: 12px; padding: 8px 0; }
 .abar .foot { height: 60px; width: 100%; display: flex; align-items: center; justify-content: center; gap: 10px; padding: 0 20px; }
+.abar .foot .btn { flex: 1 0 0; min-width: 1px; }
 .abar .stack { width: 100%; display: flex; flex-direction: column; gap: 4px; }
 .info-line { display: flex; gap: 4px; align-items: center; justify-content: center; font: 400 11px/1.3 var(--ff); color: var(--body); text-align: center; }
 .info-line img { width: 16px; height: 16px; }
@@ -76,20 +77,27 @@ html.framed .pg::before { top: 90px; }
 /* voice-over button with playback ring (Icon button + progress 669:33516) */
 .vo-btn { position: relative; width: 40px; height: 40px; border-radius: 32px; border: 1px solid #fff; background: linear-gradient(180deg, var(--subtle), var(--brand-soft)); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
 .vo-btn > img { width: 20px; height: 20px; }
+.vo-btn .i-rep, .vo-btn[data-vo="done"] .i-vol { display: none; }
+.vo-btn[data-vo="done"] .i-rep { display: block; }
+.vo-btn[data-vo="idle"] > img { opacity: .45; }
+.vo-btn[disabled] { cursor: default; }
+.vo-btn[data-vo="playing"] { pointer-events: none; }
+.vo-btn:not([data-vo="playing"]) svg { display: none; }
 .vo-btn svg { position: absolute; left: -1px; top: -1px; width: 40px; height: 40px; transform: rotate(-90deg); pointer-events: none; }
 .vo-btn svg circle { fill: none; stroke: var(--brand-strong); stroke-width: 1.6; }
 .vo-btn svg .trk { opacity: .2; }
 .vo-btn svg .bar { stroke-dasharray: 0 200; transition: stroke-dasharray .25s linear; }
-.vo-btn.off > img { opacity: .4; }
-.vo-btn.off::after { content: ''; position: absolute; width: 22px; height: 2px; background: var(--brand-strong); transform: rotate(-45deg); border-radius: 1px; }
-.vo-btn.off svg .bar { stroke-dasharray: 0 200 !important; }
 .vo-pill { height: 40px; padding: 0 16px; border-radius: 32px; border: 1px solid #fff; background: linear-gradient(180deg, var(--subtle), var(--brand-soft)); display: flex; align-items: center; gap: 4px; font: 500 13px/normal var(--ff); color: var(--brand); }
 .vo-pill img { width: 20px; height: 20px; }
-.vo-pill.off img { opacity: .4; }
-.vo-pill.off span { text-decoration: line-through; }
 
 /* number plate (Progress/Number plate loader 669:32424) */
 .plate { position: relative; overflow: hidden; display: inline-flex; padding: 6px 12px; border-radius: 6px; background: var(--surface-muted); border: 2px solid var(--line-muted); font: 700 20px/1.2 'Montserrat', sans-serif; color: var(--body); white-space: nowrap; }
+.plate > span { position: relative; }
+/* loader sweep: two slanted bars (20 + 10 wide, rotated 30°) travel from x -74 to 173 with ease (0.8,0,0.2,1) */
+.plate .sweep { position: absolute; left: -74px; top: -24px; width: 73px; height: 88px; animation: plate-sweep 1.8s cubic-bezier(.8,0,.2,1) infinite; pointer-events: none; }
+.plate .sweep b { position: absolute; top: 0; width: 20px; height: 80px; background: var(--placeholder); transform-origin: 0 0; transform: translate(40px, 0) rotate(30deg); }
+.plate .sweep b + b { width: 10px; transform: translate(64px, 14px) rotate(30deg); }
+@keyframes plate-sweep { 0% { transform: translateX(0); } 66%, 100% { transform: translateX(247px); } }
 
 /* chips */
 .chip { display: inline-flex; align-items: center; gap: 6px; padding: 6px 10px; border-radius: 32px; font: 600 12px/normal var(--ff); white-space: nowrap; }
@@ -151,7 +159,6 @@ html.rot .cam-slot video { left: 50%; top: 50%; inset: auto; width: 100cqh; heig
 /* capture window: 70% shade around it, faint outline, corners coloured by the live check */
 .win { position: absolute; z-index: 1; left: 50%; border-radius: 20px; box-shadow: 0 0 0 3000px var(--overlay); pointer-events: none; --fc: #fff; }
 .win::before { content: ''; position: absolute; inset: 0; border-radius: 20px; border: 2px solid rgba(255,255,255,.3); }
-.win[data-state="ok"] { --fc: var(--ok-hi); }
 .win[data-state="dark"], .win[data-state="blurry"] { --fc: var(--warn-accent); }
 .win .c { position: absolute; width: 34px; height: 34px; border: 4px solid var(--fc); transition: border-color .25s; }
 .win .tl { left: -2px; top: -2px; border-right: 0; border-bottom: 0; border-radius: 16px 0 0 0; }
@@ -173,6 +180,9 @@ html.rot .cam-slot video { left: 50%; top: 50%; inset: auto; width: 100cqh; heig
 /* right rail: shutter (+ status ring / thumbnails) */
 .rail { position: absolute; z-index: 5; right: 0; bottom: 0; height: 355px; padding: 0 20px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; }
 .rail.dark { background: var(--overlay); }
+.torch-btn { width: 40px; height: 40px; border-radius: 32px; border: 1px solid #fff; background: linear-gradient(180deg, var(--subtle), var(--brand-soft)); display: flex; align-items: center; justify-content: center; flex-shrink: 0; position: absolute; left: 50%; top: 85.5px; margin-left: -20px; }
+.torch-btn img { width: 20px; height: 20px; }
+.torch-btn.on { box-shadow: 0 0 0 3px rgba(253,176,34,.6); }
 .shutter { width: 72px; height: 72px; border-radius: 36px; border: 4px solid #fff; display: flex; align-items: center; justify-content: center; flex-shrink: 0; position: relative; }
 .shutter > i { width: 56px; height: 56px; border-radius: 28px; background: #fff; transition: all .2s; }
 .shutter:active > i { transform: scale(.92); }
@@ -234,17 +244,20 @@ html.rot .cam-slot video { left: 50%; top: 50%; inset: auto; width: 100cqh; heig
 .fs .fl span { font: 400 12px/1.2 var(--ff); color: rgba(255,255,255,.75); }
 .fs .fs-act { position: absolute; left: 50%; bottom: 32px; transform: translateX(-50%); }
 
-/* ---------- turn prompt (Stage 1 / RC · Rotate phone 669:31280) ---------- */
+/* ---------- rotate prompt (V1's "Please rotate your phone" modal, Figma 669:31280) ---------- */
 .turn-prompt { position: absolute; inset: 0; z-index: 60; background: var(--overlay); display: flex; align-items: center; justify-content: center; }
-.tp-card { background: #fff; border-radius: 16px; padding: 20px 20px 24px; display: flex; flex-direction: column; align-items: center; gap: 24px; box-shadow: var(--shadow-modal); width: 295px; }
+.tp-card { width: 295px; background: #fff; border-radius: 16px; padding: 20px 20px 32px; display: flex; flex-direction: column; gap: 32px; align-items: center;
+  box-shadow: 0 87px 52px rgba(0,39,103,.05), 0 39px 39px rgba(0,39,103,.09), 0 10px 21px rgba(0,39,103,.1); }
 html.rot .tp-card.cw { transform: rotate(-90deg); }
 html.rot .tp-card.ccw { transform: rotate(90deg); }
-.tp-t { font: 600 20px/1.2 var(--ff-h); color: var(--brand-strong); text-align: center; }
-.tp-ic { width: 64px; height: 64px; animation: tp-rock 2.4s ease-in-out infinite; }
-.tp-ic.to-p { animation-name: tp-rock-p; }
-@keyframes tp-rock { 0%, 30% { transform: rotate(0); } 55%, 85% { transform: rotate(-90deg); } 100% { transform: rotate(0); } }
-@keyframes tp-rock-p { 0%, 30% { transform: rotate(-90deg); } 55%, 85% { transform: rotate(0); } 100% { transform: rotate(-90deg); } }
-.tp-skip { font: 600 12px/normal var(--ff); color: var(--muted); text-decoration: underline; text-underline-offset: 3px; margin-top: -8px; }
+.tp-t { font: 600 20px/1.2 var(--ff-h); color: var(--brand-strong); text-align: center; width: 100%; }
+.tp-ic { width: 64px; height: 64px; display: flex; align-items: center; justify-content: center; }
+.tp-ic img { width: 64px; height: 64px; }
+/* phone held upright on a landscape stage: icon rocks to landscape; held sideways on a portrait stage: icon (turned) rocks back upright */
+.tp-card.to-l .tp-ic img { animation: tp-rock-l 2.4s ease-in-out infinite; }
+.tp-card.to-p .tp-ic img { transform: rotate(-90deg) scaleX(-1); animation: tp-rock-p 2.4s ease-in-out infinite; }
+@keyframes tp-rock-l { 0%, 25% { transform: rotate(0deg); } 55%, 80% { transform: rotate(-90deg); } 100% { transform: rotate(0deg); } }
+@keyframes tp-rock-p { 0%, 25% { transform: rotate(-90deg) scaleX(-1); } 55%, 80% { transform: rotate(0deg) scaleX(-1); } 100% { transform: rotate(-90deg) scaleX(-1); } }
 
 /* VO cue (from V1): the CTA named in the voice-over pulses as its word is spoken */
 .vo-cue { animation: vo-cue 1.2s ease-out 2; }

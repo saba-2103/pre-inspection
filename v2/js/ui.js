@@ -20,7 +20,7 @@
 
   /* ---------- brand + header ---------- */
   U.logo = (white) => `<span class="logo ${white ? 'w' : ''}"><img class="mk" src="${I(white ? 'logo-mark-w.svg' : 'logo-mark.svg')}" alt=""><img class="wd" src="${I(white ? 'logo-word-w.svg' : 'logo-word.svg')}" alt="anaira"></span>`;
-  U.vo = () => `<button class="vo-btn" data-action="vo-toggle" aria-label="Voice guide"><img src="${I('volume.svg')}" alt="">
+  U.vo = () => `<button class="vo-btn" data-vo="idle" disabled aria-label="Voice guide"><img class="i-vol" src="${I('volume.svg')}" alt=""><img class="i-rep" src="${I('replay.svg')}" alt="">
     <svg viewBox="0 0 40 40"><circle class="trk" cx="20" cy="20" r="19"/><circle class="bar" cx="20" cy="20" r="19"/></svg></button>`;
   U.nav = (right = U.vo(), cls = '') => `<div class="nav ${cls}">${U.logo()}${right}</div>`;
   U.title = (h, s) => `<div class="ptitle"><p class="h">${h}</p>${s ? `<p class="s">${s}</p>` : ''}</div>`;
@@ -62,6 +62,7 @@
     const shutter = o.shutter === 'video'
       ? `<span class="rtimer">0:00</span><button class="shutter rec" data-action="shutter" aria-label="Record"><i></i></button>`
       : `<button class="shutter" data-action="shutter" aria-label="Capture"><i></i></button>`;
+    const torch = o.torch ? `<button class="torch-btn" data-action="torch" aria-label="Torch"><img src="${I('torch-off.svg')}" alt=""></button>` : '';
     return `
       <div class="cam-slot"></div>
       ${o.win ? `<div class="win w-${o.win}" data-win><i class="c tl"></i><i class="c tr"></i><i class="c bl"></i><i class="c br"></i></div>` : ''}
@@ -69,7 +70,7 @@
       ${U.camNav({ items: o.items, cur: o.cur, left: o.navLeft })}
       <div class="live" data-live><img src="${I('alert-16-dark.svg')}" alt=""><span></span></div>
       ${o.shutter === 'video' ? '<p class="countdown" data-count>3</p>' : ''}
-      <div class="rail ${o.railCls || ''}">${o.railTop || ''}${shutter}${o.railBottom || ''}</div>
+      <div class="rail ${o.railCls || ''}">${o.railTop || ''}${torch}${shutter}${o.railBottom || ''}</div>
       ${o.zoom ? `<div class="zoom">${[1, 2, 3].map((z) => `<button data-zoom="${z}" class="${z === 1 ? 'on' : ''}">${z}x</button>`).join('')}</div>` : ''}
       ${o.badge ? `<p class="ibadge" data-badge>${esc(o.badge)}</p>` : ''}
       ${o.extra || ''}`;
@@ -85,7 +86,7 @@
       if (win) win.dataset.state = state;
       const msg = state === 'dark' ? (Camera.canTorch() ? 'Too dark · torch turned on, hold still' : 'Too dark · find more light') : state === 'blurry' ? 'Hold still · the picture is blurry' : '';
       if (pill && el.dataset.rec !== 'on') { pill.classList.toggle('on', !!msg); pill.querySelector('span').textContent = msg; }
-      if (state === 'dark' && Camera.canTorch() && !Camera.torchOn) Camera.torch(true);
+      if (state === 'dark' && Camera.canTorch() && !Camera.torchOn) { Camera.torch(true); U.torchIcon(el, true); }
     };
     const tick = () => {
       const s = Camera.source;
@@ -116,6 +117,7 @@
       const a = e.target.closest('[data-action]');
       if (!a) return;
       const act = a.dataset.action;
+      if (act === 'torch') { U.torchIcon(el, await App.Camera.torch(!App.Camera.torchOn)); return; }
       if (act === 'shutter' && !o.video) {
         if (el.dataset.busy || el.querySelector('.ov')) return;
         el.dataset.busy = 1;
@@ -130,6 +132,8 @@
     if (o.video) offs.push(recorder(el, o));
     return () => { offs.forEach((f) => f && f()); App.Camera.torch(false); if (App.Camera.video) App.Camera.video.remove(); };
   };
+  // Torch (855:81742 off / 855:81738 on)
+  U.torchIcon = (el, on) => { const b = el.querySelector('.torch-btn'); if (b) { b.classList.toggle('on', on); b.querySelector('img').src = I(on ? 'torch-on.svg' : 'torch-off.svg'); } };
   function flash(el) {
     const f = document.createElement('div');
     f.className = 'flash';
@@ -237,13 +241,6 @@
           <div class="bot">${tip}<div class="row">${btns}</div></div>
         </div>
       </div>`;
-  };
-  U.verdictVO = (o) => {
-    const q = (o.cap && o.cap.quality) || { ok: true };
-    if (o.cap && o.cap.kind === 'video') return 'Looks good. Tap Use video.';
-    if (q.ok !== false) return 'Looks good. Tap Use photo.';
-    if (q.dark) return "It's too dark. Turn on the torch or find better light, then tap Retake.";
-    return o.mode === 'skip' ? 'That photo is blurry. Tap Retake, or Skip to continue.' : 'That photo is blurry. Hold still and tap Retake.';
   };
   U.mountVerdict = (el, o) => {
     const cap = o.cap;

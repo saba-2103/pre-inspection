@@ -14,11 +14,10 @@
     state: {
       captures: {}, // key -> {kind:'photo'|'video', url, blob, w, h, duration, quality:{dark,blurry,ok}, sample?}
       damages: [], // [{panel, type, close, wide}]
-      rcType: 'card', // 'card' | 'paper' (toggle on the RC screen)
+      rcType: null, // 'card' | 'paper', picked on the RC type modal
       permissions: {},
       location: null,
       note: '', voiceNote: null,
-      rotLock: false, // "Rotation locked? Start anyway": keep screens counter-rotated, no turn prompt
       // optional capture flows picked on the internal Items screen (?optional=0 starts with all off)
       items: Object.fromEntries(['windshield', 'roof', 'vin', 'engine'].map((k) => [k, params.get('optional') !== '0'])),
     },
@@ -53,7 +52,7 @@
 
   /* ---------- render ---------- */
   const stage = document.getElementById('stage');
-  let lastId = null, lastRot = null;
+  let lastId = null, lastRot = null, lastVO = null;
   const currentId = () => { const m = location.hash.match(/^#\/([^?]+)/); return m ? decodeURIComponent(m[1]) : App.startId; };
   App.hashParam = (k) => new URLSearchParams(location.hash.split('?')[1] || '').get(k);
 
@@ -74,9 +73,9 @@
     html.classList.toggle('phone-land', !framed && (def.orientation === 'landscape'));
     html.classList.toggle('rot', !!rot);
     layout(def, framed, rot);
-    const prompt = rot && !App.state.rotLock && !def.turnTo;
+    const prompt = rot && !def.turnTo;
     const key = location.hash; // includes ?state=… so deep-link variants re-render
-    if (lastId === key && App.current === id && lastRot === rot) { togglePrompt(prompt, def); return; } // only a resize
+    if (lastId === key && App.current === id && lastRot === rot) return; // only a resize
     if (App.cleanup) { try { App.cleanup(); } catch (e) { console.error(e); } App.cleanup = null; }
     App.current = id; lastId = key; lastRot = rot;
 
@@ -89,27 +88,27 @@
     stage.replaceChildren(el);
     App.cleanup = def.mount ? def.mount(el, ctx) || null : null;
     const vo = typeof def.vo === 'function' ? def.vo(ctx) : def.vo;
-    if (vo) App.VO.speak(vo); else App.VO.stop();
+    // no voice-over behind the rotate prompt (it plays once the phone is turned); a re-render with the same
+    // voice-over on the same screen (permission checks, RC type picks…) doesn't replay it
+    if (prompt) { App.VO.clear(); lastVO = null; }
+    else if (!vo) { App.VO.clear(); lastVO = null; }
+    else if (!lastVO || lastVO.id !== id || lastVO.text !== vo) { lastVO = { id, text: vo }; App.VO.speak(vo); }
     App.VO.bind(el);
     togglePrompt(prompt, def);
     document.body.style.background = framed ? '' : getComputedStyle(el).backgroundColor;
   }
 
-  /* rotate prompt over a counter-rotated screen (Figma 669:31280). The card is turned back so it reads upright in the
-     hand; "Rotation locked? Continue anyway" keeps the counter-rotated screen without the prompt. */
+  /* rotate prompt over a counter-rotated screen (V1's "Please rotate your phone" modal, Figma 669:31280); the card
+     is turned back so it reads upright in the hand */
   function togglePrompt(show, def) {
     let p = stage.querySelector('.turn-prompt');
     if (!show) { if (p) p.remove(); return; }
     if (p) return;
-    const land = def.orientation === 'landscape';
     p = document.createElement('div');
     p.className = 'turn-prompt';
-    p.innerHTML = `<div class="tp-card ${App.rot || ''}"><p class="tp-t">Please rotate your phone</p>
-      <img class="tp-ic ${land ? '' : 'to-p'}" src="${App.asset('ui/smartphone.svg')}" alt="">
-      <button class="tp-skip" type="button">Rotation locked? Continue anyway</button></div>`;
-    p.querySelector('.tp-skip').addEventListener('click', () => { App.state.rotLock = true; p.remove(); });
+    p.innerHTML = `<div class="tp-card ${App.rot || ''} ${def.orientation === 'landscape' ? 'to-l' : 'to-p'}"><p class="tp-t">Please rotate your phone</p>
+      <div class="tp-ic"><img src="${App.asset('ui/rotate-phone.svg')}" alt=""></div></div>`;
     stage.appendChild(p);
-    App.VO.speak(land ? 'Please turn your phone sideways to continue.' : 'Please turn your phone upright to review.');
   }
 
   /* Stage = design canvas scaled to the viewport. Portrait 390 wide (height flexes), landscape fits the 850×356 content
@@ -206,19 +205,23 @@
 
   /* ---------- Voice-over (speechSynthesis) ---------- */
   const VO = (App.VO = {
-    muted: false,
     text: '',
     _voice: null,
+    _n: 0, // id of the current utterance; events from cancelled ones are ignored
     pickVoice() {
       if (this._voice || !window.speechSynthesis) return this._voice;
       const vs = speechSynthesis.getVoices();
       this._voice = vs.find((v) => /en[-_]IN/i.test(v.lang)) || vs.find((v) => /^en/i.test(v.lang)) || null;
       return this._voice;
     },
+    /* The voice guide is mandatory: while it plays the voice button shows its progress ring and can't be tapped;
+       once it ends the button turns into Replay (Icon button + progress 669:33516 / 669:33529). */
     speak(text) {
       this.text = String(text).replace(/[“”"]/g, '');
       this.stop();
-      if (this.muted || !window.speechSynthesis) return;
+      const n = ++this._n;
+      if (!window.speechSynthesis) return this.state('done');
+      this.state('playing');
       const u = new SpeechSynthesisUtterance(this.text);
       const v = this.pickVoice();
       if (v) { u.voice = v; u.lang = v.lang; } else u.lang = 'en-IN';
@@ -226,21 +229,39 @@
       const cues = this.cues(this.text);
       let exact = false, t0 = 0;
       u.onstart = () => {
+        if (n !== this._n) return;
         t0 = Date.now();
         this._cueT = cues.map((c) => setTimeout(() => !exact && this.cue(c), (est * c.at) / this.text.length));
         this._ringT = setInterval(() => this.ring(Math.min(0.97, (Date.now() - t0) / est)), 120);
       };
       u.onboundary = (e) => {
-        if (e.name && e.name !== 'word') return;
+        if (n !== this._n || (e.name && e.name !== 'word')) return;
         exact = true;
         cues.forEach((c) => { if (!c.done && e.charIndex >= c.at) this.cue(c); });
-        this.ring(Math.min(1, e.charIndex / this.text.length));
+        this.ring(Math.max(this._p || 0, Math.min(1, e.charIndex / this.text.length)));
       };
-      u.onend = () => { clearInterval(this._ringT); this.ring(1); };
-      setTimeout(() => speechSynthesis.speak(u), 120);
+      u.onend = u.onerror = () => { if (n !== this._n) return; clearInterval(this._ringT); this.state('done'); };
+      this._startT = setTimeout(() => speechSynthesis.speak(u), 120);
     },
-    /* playback ring on the voice button (Icon button progress 669:33517) */
-    ring(p) { document.querySelectorAll('#stage .vo-btn .bar').forEach((c) => { c.style.strokeDasharray = `${(p * 119.4).toFixed(1)} 200`; }); },
+    replay() { if (this.text) this.speak(this.text); },
+    /* playback ring: forwards only; a reset jumps straight back to 0 (no reverse animation) */
+    ring(p, jump) {
+      this._p = p;
+      document.querySelectorAll('#stage .vo-btn .bar').forEach((c) => {
+        if (jump) { c.style.transition = 'none'; c.style.strokeDasharray = '0 200'; void c.getBoundingClientRect(); c.style.transition = ''; return; }
+        c.style.strokeDasharray = `${(p * 119.4).toFixed(1)} 200`;
+      });
+    },
+    // 'playing' (ring, not tappable) · 'done' (replay) · 'idle' (no voice-over on this screen)
+    state(s) {
+      this._state = s;
+      if (s !== 'playing') this.ring(0, true);
+      document.querySelectorAll('#stage .vo-btn').forEach((b) => {
+        b.dataset.vo = s;
+        b.disabled = s !== 'done';
+        b.setAttribute('aria-label', s === 'done' ? 'Replay voice guide' : 'Voice guide');
+      });
+    },
     /* CTA cues (from V1): "tap Record" / "Tap Use photo" → highlight that visible button as the word is spoken */
     cues(text) {
       const norm = (s) => s.replace(/[’‘]/g, "'").replace(/^'|'$/g, '').replace(/\s+/g, ' ').trim().toLowerCase();
@@ -269,21 +290,19 @@
       setTimeout(() => c.el.classList.remove('vo-cue'), 2400);
     },
     stop() {
+      this._n++;
       (this._cueT || []).forEach(clearTimeout);
-      clearInterval(this._ringT); this.ring(0);
+      clearTimeout(this._startT);
+      clearInterval(this._ringT);
       document.querySelectorAll('.vo-cue').forEach((n) => n.classList.remove('vo-cue'));
       if (window.speechSynthesis) speechSynthesis.cancel();
+      this.state(this.text && this._state !== 'idle' ? 'done' : 'idle');
     },
-    setMuted(m) {
-      this.muted = m;
-      if (m) this.stop(); else if (this.text) this.speak(this.text);
-      document.querySelectorAll('[data-action="vo-toggle"]').forEach((b) => b.classList.toggle('off', m));
-    },
+    // screens without a voice-over: button shown but inactive
+    clear() { this.text = ''; this._state = 'idle'; this.stop(); },
     bind(root) {
-      root.querySelectorAll('[data-action="vo-toggle"]').forEach((b) => {
-        b.classList.toggle('off', this.muted);
-        b.addEventListener('click', () => this.setMuted(!this.muted));
-      });
+      root.querySelectorAll('.vo-btn').forEach((b) => b.addEventListener('click', () => { if (this._state === 'done') this.replay(); }));
+      this.state(this._state || 'idle');
     },
   });
   if (window.speechSynthesis) speechSynthesis.onvoiceschanged = () => { VO._voice = null; VO.pickVoice(); };

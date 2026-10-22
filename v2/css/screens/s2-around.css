@@ -28,15 +28,15 @@
 
 /* 360° walk-around: rail with orbit status, last shot; close + REC; move cue; angle card */
 .rail.wrail, .rail.drail { width: 120px; padding: 60px 12px 20px; gap: 24px; justify-content: center; }
-.orbit { position: relative; width: 86px; height: 86px; flex-shrink: 0; }
-.orbit .ring { position: absolute; left: 5px; top: 5px; width: 76px; height: 76px; opacity: .5; }
-.orbit .car { position: absolute; left: 50%; top: 50%; width: 52px; height: 26px; transform: translate(-50%, -50%) rotate(-90deg); filter: drop-shadow(0 2px 5px rgba(0,0,0,.1)); }
-.orbit .on { position: absolute; width: 12px; height: 12px; margin: -6px 0 0 -6px; }
-.orbit .on.ok { border-radius: 6px; background: var(--ok); display: flex; align-items: center; justify-content: center; padding: 0; }
-.orbit .on.ok img { width: 9px; height: 9px; }
-.orbit .on.num { width: 20px; height: 20px; margin: -10px 0 0 -10px; border-radius: 10px; background: var(--brand); border: 1.5px solid #fff; display: flex; align-items: center; justify-content: center; font: 600 11px/1 var(--ff-h); color: #fff; }
-.orbit .cone { position: absolute; width: 42.23px; height: 27.84px; transform-origin: 21.6px 21.3px; }
-.orbit.numbers .ring { opacity: .6; }
+.orbit { --k: 1; position: relative; width: calc(86px * var(--k)); height: calc(86px * var(--k)); flex-shrink: 0; }
+.orbit .ring { position: absolute; left: calc(5px * var(--k)); top: calc(5px * var(--k)); width: calc(76px * var(--k)); height: calc(76px * var(--k)); opacity: .5; }
+.orbit .car { position: absolute; left: 50%; top: 50%; width: calc(52px * var(--k)); height: calc(26px * var(--k)); transform: translate(-50%, -50%) rotate(-90deg); filter: drop-shadow(0 2px 5px rgba(0,0,0,.12)); }
+.orbit .on { position: absolute; width: calc(12px * var(--k)); height: calc(12px * var(--k)); margin: calc(-6px * var(--k)) 0 0 calc(-6px * var(--k)); }
+.orbit .on.ok { border-radius: 50%; background: var(--ok); display: flex; align-items: center; justify-content: center; padding: 0; }
+.orbit .on.ok img { width: calc(9px * var(--k)); height: calc(9px * var(--k)); }
+/* intro modal (736:57921): white dots with a thick brand ring and the angle number */
+.orbit .on.num { border-radius: 50%; background: #fff; border: calc(2.15px * var(--k)) solid var(--brand); display: flex; align-items: center; justify-content: center; font: 400 calc(9.8px * var(--k))/1 var(--ff); color: #000; }
+.orbit .cone { position: absolute; width: calc(42.23px * var(--k)); height: calc(27.84px * var(--k)); transform-origin: calc(21.6px * var(--k)) calc(21.3px * var(--k)); }
 .lthumb { width: 96px; height: 54px; border-radius: 8px; border: .5px solid #fff; overflow: hidden; flex-shrink: 0; background: rgba(255,255,255,.08); }
 .lthumb img { width: 100%; height: 100%; object-fit: cover; }
 .lthumb[disabled] { opacity: .5; }
@@ -52,14 +52,15 @@
 .cue img { width: 35.25px; height: 12px; animation: cue-run 1.2s linear infinite; }
 .cue span { font: 400 12px/normal var(--ff); color: #fff; white-space: nowrap; }
 @keyframes cue-run { 0% { opacity: .35; } 50% { opacity: 1; } 100% { opacity: .35; } }
-.angle { position: absolute; z-index: 4; left: 8px; bottom: 8px; width: 361px; border-radius: 8px; border: 1px solid var(--brand-strong); background: var(--overlay); overflow: hidden; display: flex; flex-direction: column; gap: 4px; pointer-events: none; }
-.angle .ah { display: flex; align-items: flex-start; gap: 6px; padding: 4px 8px; font: 500 10px/1.1 var(--ff-h); color: #fff; }
-.angle .ah span { width: 12px; height: 12px; border-radius: 6px; background: #fff; color: var(--brand); font: 600 8px/12px var(--ff); text-align: center; flex-shrink: 0; margin-top: 1px; }
-.angle .ai { height: 64px; position: relative; overflow: hidden; }
-.angle .ai img { position: absolute; left: 0; top: 50%; width: 100%; transform: translateY(-50%); }
-.walk .ibadge { left: calc(50% + 120px); }
+/* angle thumbnail (734:57299): 96 × 96, step + name, then the example (64 high) */
+.angle { position: absolute; z-index: 4; left: 8px; bottom: 8px; width: 96px; height: 96px; border-radius: 8px; border: 1px solid var(--brand-strong); background: var(--overlay); overflow: hidden; display: flex; flex-direction: column; pointer-events: none; }
+.angle .ah { display: flex; align-items: center; gap: 6px; padding: 4px 8px; font: 500 10px/1.1 var(--ff-h); color: #fff; white-space: nowrap; }
+.angle .ah span { width: 12px; height: 12px; border-radius: 6px; background: #fff; color: var(--brand); font: 600 8px/12px var(--ff); text-align: center; flex-shrink: 0; }
+.angle .ai { height: 64px; position: relative; overflow: hidden; flex-shrink: 0; }
+.angle .ai img { position: absolute; max-width: none; }
+.angle .ai img.fit { inset: 0; width: 100%; height: 100%; object-fit: contain; }
+.walk .ibadge { left: 50%; }
 .lmodal.orbm .orb-wrap { flex: 1 0 0; min-height: 1px; display: flex; align-items: center; justify-content: center; }
-.lmodal.orbm .orbit { transform: scale(1.62); }
 
 /* 360° · all captured (737:58532) */
 .wdone .vrow { align-items: stretch; }
@@ -70,7 +71,6 @@
 .gl { font: 500 12px/1.1 var(--ff-h); color: var(--text); white-space: nowrap; }
 .wdone .vside { width: 202px; }
 .orb-big { display: flex; justify-content: center; padding-top: 18px; }
-.orb-big .orbit { transform: scale(1.63); transform-origin: 50% 0; margin-bottom: 54px; }
 
 /* Damages (743:60679): Finish in the rail */
 .btn.finish { position: absolute; z-index: 6; right: 16px; top: 104px; height: 43px; }

@@ -78,34 +78,37 @@
   });
 
   /* ---------- 360° walk-around (steps 720:48913 … 713:46171) ---------- */
+  // ex = angle example (Angle thumbnail 734:57274 …): image + its Figma crop [w%, h%, left%, top%] (none = contain)
   const WALK = [
-    { name: 'Front', node: '720:48913', vo: 'Stand in front of the car. Keep the whole car in the frame and tap Capture.' },
-    { name: 'Front left', node: '706:44391', vo: 'Walk slowly to the front left corner, then tap Capture.' },
-    { name: 'Left, front half', node: '706:45179', vo: 'Now, the left side, front half.' },
-    { name: 'Left, rear half', node: '713:45453', vo: 'Now, the left side, rear half.' },
-    { name: 'Rear left', node: '713:45571', vo: 'Walk to the rear left corner, then tap Capture.' },
-    { name: 'Rear', node: '713:45691', vo: 'Now, the rear of the car.' },
-    { name: 'Rear right', node: '713:45811', vo: 'Walk to the rear right corner, then tap Capture.' },
-    { name: 'Right, rear half', node: '713:45931', vo: 'Now, the right side, rear half.' },
-    { name: 'Right, front half', node: '713:46051', vo: 'Now, the right side, front half.' },
-    { name: 'Front right', node: '713:46171', vo: 'Last one. Walk to the front right corner, then tap Capture.' },
+    { name: 'Front', short: 'Front', ex: 'a1', node: '720:48913', vo: 'Stand in front of the car. Keep the whole car in the frame and tap Capture.' },
+    { name: 'Front left', short: 'Front Left', ex: 'a2', crop: [124.47, 121.62, -18.21, -9.38], node: '706:44391', vo: 'Walk slowly to the front left corner, then tap Capture.' },
+    { name: 'Left, front half', short: 'Left Front', ex: 'a3', crop: [142.01, 137.65, 16.52, -21.32], node: '706:45179', vo: 'Now, the left side, front half.' },
+    { name: 'Left, rear half', short: 'Left Rear', ex: 'a3', crop: [142.01, 137.65, -41.59, -21.32], node: '713:45453', vo: 'Now, the left side, rear half.' },
+    { name: 'Rear left', short: 'Rear Left', ex: 'a5', crop: [144.35, 150.83, -22.17, -28.26], node: '713:45571', vo: 'Walk to the rear left corner, then tap Capture.' },
+    { name: 'Rear', short: 'Rear', ex: 'a6', node: '713:45691', vo: 'Now, the rear of the car.' },
+    { name: 'Rear right', short: 'Rear Right', ex: 'a7', crop: [138.81, 145.05, -19.4, -23.44], node: '713:45811', vo: 'Walk to the rear right corner, then tap Capture.' },
+    { name: 'Right, rear half', short: 'Right Rear', ex: 'a8', crop: [140.79, 136.46, -0.01, -21.1], node: '713:45931', vo: 'Now, the right side, rear half.' },
+    { name: 'Right, front half', short: 'Right Front', ex: 'a8', crop: [140.79, 136.46, -40.68, -21.1], node: '713:46051', vo: 'Now, the right side, front half.' },
+    { name: 'Front right', short: 'Front Right', ex: 'a10', crop: [126.01, 123.13, -8.51, -10.95], node: '713:46171', vo: 'Last one. Walk to the front right corner, then tap Capture.' },
   ].map((w, i) => ({ ...w, photo: A(`walk/w${i + 1}.jpg`) })); // sample stills: Figma 360° step photos
+  const exImg = (w) => `<img class="${w.crop ? '' : 'fit'}" src="${A(`angle/${w.ex}.png`)}" alt=""${w.crop ? ` style="width:${w.crop[0]}%;height:${w.crop[1]}%;left:${w.crop[2]}%;top:${w.crop[3]}%"` : ''}>`;
   U.WALK = WALK;
   const wkey = (n) => 'walk_' + n;
   const walkDone = () => WALK.filter((_, i) => App.capture(wkey(i + 1))).length;
 
   /* orbit status (Capture status 706:44636): dashed ring, top-down car (front down), 10 angles counter-clockwise from
      the front; done = green tick, current = blue dot with a view cone toward the car, numbers for the intro */
-  U.orbit = (cur, mode) => {
-    const R = 37, C = 43;
+  // size: 86 in the shutter rail, 140 in the intro modal and the all-captured summary (everything scales with it)
+  U.orbit = (cur, mode, size = 86) => {
+    const k = size / 86, R = 37 * k, C = 43 * k;
     const dots = WALK.map((_, i) => {
       const n = i + 1, a = (i * 36 * Math.PI) / 180, x = C + R * Math.sin(a), y = C + R * Math.cos(a);
       if (mode === 'numbers') return `<span class="on num" style="left:${x}px;top:${y}px">${n}</span>`;
-      if (n === cur) return `<img class="cone" style="left:${x - 21.6}px;top:${y - 21.3}px;transform:rotate(${-i * 36}deg)" src="${A('cam2/orb-cur.svg')}" alt="">`;
+      if (n === cur) return `<img class="cone" style="left:${x - 21.6 * k}px;top:${y - 21.3 * k}px;transform:rotate(${-i * 36}deg)" src="${A('cam2/orb-cur.svg')}" alt="">`;
       if (mode === 'all' || App.capture(wkey(n))) return `<button class="on ok" data-angle="${n}" style="left:${x}px;top:${y}px" aria-label="${WALK[i].name}"><img src="${A('cam2/orb-check.svg')}" alt=""></button>`;
       return `<img class="on" style="left:${x}px;top:${y}px" src="${A('cam2/orb-todo.svg')}" alt="">`;
     }).join('');
-    return `<div class="orbit ${mode || ''}"><img class="ring" src="${A('cam2/orb-circle.png')}" alt=""><img class="car" src="${A('cam2/orb-car.png')}" alt="">${dots}</div>`;
+    return `<div class="orbit ${mode || ''}" style="--k:${k}"><img class="ring" src="${A('cam2/orb-circle.png')}" alt=""><img class="car" src="${A('cam2/orb-car.png')}" alt="">${dots}</div>`;
   };
 
   const introModal = () => {
@@ -115,7 +118,7 @@
     }
     if (!st.seen.walkIntro) {
       return { vo: 'Now, record a full round of your car. Make sure the car is always in the frame while moving.',
-        html: U.lmodal({ title: '360° walk-around', cls: 'orbm', body: `<div class="orb-wrap">${U.orbit(0, 'numbers')}</div>`, foot: '<button class="btn full" data-action="walk-go">Continue</button>' }) };
+        html: U.lmodal({ title: '360° walk-around', cls: 'orbm', body: `<div class="orb-wrap">${U.orbit(0, 'numbers', 140)}</div>`, foot: '<button class="btn full" data-action="walk-go">Continue</button>' }) };
     }
     return null;
   };
@@ -136,7 +139,7 @@
           railTop: U.orbit(n),
           railBottom: `<button class="lthumb" data-action="last" ${lc ? '' : 'disabled'}>${lc ? `<img src="${lc.url}" alt="">` : ''}</button>`,
           extra: `${n > 1 ? `<div class="cue"><img src="${I('arrows.svg')}" alt=""><span>Walk around the car slowly</span><img src="${I('arrows.svg')}" alt=""></div>` : ''}
-            <div class="angle"><p class="ah"><span>${n}</span>Capture<br>${esc(w.name)}</p><div class="ai"><img src="${w.photo}" alt=""></div></div>`,
+            <div class="angle"><p class="ah"><span>${n}</span>Capture<br>${esc(w.short)}</p><div class="ai">${exImg(w)}</div></div>`,
         }) + (m ? m.html : '');
       },
       mount: (el) => {
@@ -173,7 +176,6 @@
   // a failed check stops the walk-around with the review panel
   App.screen({
     id: 'walk-check', title: '360° · failed check', orientation: 'landscape', className: 'vpage',
-    vo: () => U.verdictVO({ cap: App.capture(wkey(st.walkBad || 1)), mode: 'anyway' }),
     render: () => {
       const n = st.walkBad || 1, w = WALK[n - 1];
       return U.verdict({ label: `${w.name} · ${n} of 10`, cap: App.capture(wkey(n)), fallback: w.photo, ask: '', mode: 'anyway' });
@@ -195,7 +197,7 @@
           <button class="gi" data-retake="${i + 1}"><span class="gp"><img src="${c ? c.url : w.photo}" alt=""></span><span class="gl">${w.name}</span></button>`; }).join('')}</div>
         <div class="vside"><div class="top"><p class="lab">${F.label('walk')}</p>
           <div class="head"><i><img src="${I('check-16-w.svg')}" alt=""></i><p>Completed</p></div>
-          <div class="orb-big">${U.orbit(0, 'all')}</div></div>
+          <div class="orb-big">${U.orbit(0, 'all', 140)}</div></div>
           <div class="bot"><div class="row"><button class="btn flex" data-action="continue">Continue</button></div></div></div>
       </div>`,
     mount: (el) => el.addEventListener('click', (e) => {

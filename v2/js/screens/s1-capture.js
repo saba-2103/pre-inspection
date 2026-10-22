@@ -18,7 +18,7 @@
     App.screen({
       id: o.id, node: o.node, title: o.title, orientation: 'landscape', className: 'cam',
       vo: () => { const m = modal(); return m ? m.vo : o.vo; },
-      render: () => { const m = modal(); return U.cam({ items: list(o.stage), cur: o.stage === 's2' ? o.step || o.key() : o.key(), win: o.win, badge: o.badge, zoom: o.zoom }) + (m ? m.html : ''); },
+      render: () => { const m = modal(); return U.cam({ items: list(o.stage), cur: o.stage === 's2' ? o.step || o.key() : o.key(), win: o.win, badge: o.badge, zoom: o.zoom, torch: true }) + (m ? m.html : ''); },
       mount: (el) => {
         if (!st.recT0) st.recT0 = Date.now(); // the inspection recording runs from the first capture
         if (o.mount) o.mount(el);
@@ -35,7 +35,6 @@
     const vopts = () => ({ label: F.label(o.step || o.key()), cap: App.capture(o.key()), fallback: o.fallback(), ask: o.ask(), mode: o.mode });
     App.screen({
       id: o.id + '-ok', node: o.okNode, title: o.title + ' · review', orientation: 'landscape', className: 'vpage',
-      vo: () => U.verdictVO(vopts()),
       render: () => U.verdict(vopts()),
       mount: (el) => U.mountVerdict(el, {
         cap: App.capture(o.key()), fsLabel: F.label(o.step || o.key()).split(' · ')[0],
@@ -67,7 +66,6 @@
     const vopts = () => ({ label: F.label(o.key), cap: App.capture(o.key), poster: (App.capture(o.key) || {}).poster || o.fallback, fallback: o.fallback, ask: o.ask, chips: o.chips });
     App.screen({
       id: o.id + '-ok', node: o.okNode, title: o.title + ' · recorded', orientation: 'landscape', className: 'vpage',
-      vo: () => U.verdictVO(vopts()),
       render: () => U.verdict(vopts()),
       mount: (el) => U.mountVerdict(el, {
         cap: App.capture(o.key), fsLabel: o.label,
@@ -78,20 +76,21 @@
   };
 
   /* ---------- RC type (727:53032 / paper 727:53049 / card 727:53066) + RC capture ---------- */
-  const rcTypeModal = () => {
+  const rcOpts = () => {
     const opt = (t, label, img) => {
       const on = st.rcType === t;
       return `<button class="rco ${on ? 'on' : ''}" data-action="rc-${t}"><span class="rh"><b>${label}</b><img src="${I(on ? 'check-20-brand.svg' : 'dot-20.svg')}" alt=""></span>${img}</button>`;
     };
-    return {
-      vo: 'Do you have a RC paper or RC card?',
-      html: U.lmodal({
-        title: 'Select your type of RC', cls: 'rctype',
-        body: `<div class="rcopts">${opt('paper', 'RC Paper', `<span class="rp"><img src="${IMG('rc-paper.png')}" alt=""></span>`)}${opt('card', 'RC Card', `<span class="rcd"><img src="${IMG('rc-card-front.png')}" alt=""></span>`)}</div>`,
-        foot: '<button class="btn full" data-action="rc-continue">Continue</button>',
-      }),
-    };
+    return opt('paper', 'RC Paper', `<span class="rp"><img src="${IMG('rc-paper.png')}" alt=""></span>`) + opt('card', 'RC Card', `<span class="rcd"><img src="${IMG('rc-card-front.png')}" alt=""></span>`);
   };
+  const rcTypeModal = () => ({
+    vo: 'Do you have a RC paper or RC card?',
+    html: U.lmodal({
+      title: 'Select your type of RC', cls: 'rctype',
+      body: `<div class="rcopts">${rcOpts()}</div>`,
+      foot: `<button class="btn full" data-action="rc-continue" ${st.rcType ? '' : 'disabled'}>Continue</button>`,
+    }),
+  });
   const docModal = (title, img, cls) => U.lmodal({ title, cls: 'doc ' + cls, body: `<span class="dimg"><img src="${IMG(img)}" alt=""></span>`, foot: '<button class="btn full" data-action="got-it">Got it</button>' });
   U.photoStep({
     id: 'rc', node: '688:66438', okNode: '678:65248', title: 'RC capture (type → instruction → capture)', stage: 's1', win: 'rc',
@@ -103,9 +102,15 @@
         : { vo: 'Now, capture the front of your RC card.', html: docModal('Capture RC Card (Front)', 'rc-card-front.png', 'card') }),
     vo: 'Keep it flat, inside the frame, and tap Capture.',
     ask: () => 'Can you read the reg. number? Tap Use photo.', mode: 'retake',
-    onAction: (act) => {
-      if (act === 'rc-paper' || act === 'rc-card') { st.rcType = act.slice(3); App.rerender(); }
-      if (act === 'rc-continue') { st.rcChosen = true; App.rerender(); }
+    onAction: (act, el) => {
+      // picking a type updates the modal and the stepper in place (V1): no reload, no voice-over replay
+      if (act === 'rc-paper' || act === 'rc-card') {
+        st.rcType = act.slice(3);
+        el.querySelector('.rcopts').innerHTML = rcOpts();
+        el.querySelector('[data-action="rc-continue"]').disabled = false;
+        el.querySelector('.stepper').outerHTML = U.stepper(F.s1(), paper() ? 'rcPaper' : 'rcFront');
+      }
+      if (act === 'rc-continue' && st.rcType) { st.rcChosen = true; App.rerender(); }
     },
   });
   U.photoStep({

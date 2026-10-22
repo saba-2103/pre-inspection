@@ -14,13 +14,13 @@
     render: () => `
       ${U.status()}
       <div class="wa-bar"><img class="back" src="${WA('back.svg')}" alt="">
-        <span class="av"><img src="${WA('logomark.svg')}" alt=""></span>
+        <span class="av"><img src="${I('logo-mark.svg')}" alt=""></span>
         <div class="who"><p>Anaira ${verified('ver')}</p><span>Business Account</span></div>
         <img class="more" src="${WA('more.svg')}" alt=""></div>
       <div class="wa-chat">
         <span class="date">23 April 2026</span>
         <div class="acct">
-          <span class="big"><img src="${WA('logomark.svg')}" alt=""></span>
+          <span class="big"><img src="${I('logo-mark.svg')}" alt=""></span>
           <p class="nm">Anaira ${verified('ver2')}</p>
           <p class="since">Business account • Joined in September, 2025</p>
           <i class="ln"></i>
@@ -71,12 +71,13 @@
   });
 
   /* ---------- Loading (669:30755) ---------- */
-  const plate = (size = 18) => `<div class="plate-stack"><span class="plate">${esc(cfg.reg)}</span><p style="font-size:${size}px">${esc(cfg.model)}</p></div>`;
+  // number plate (Progress/Number plate loader 669:32424); on loading a light sweep runs across it (Start → End, 1.2 s)
+  const plate = (size = 18, loader) => `<div class="plate-stack"><span class="plate ${loader ? 'loader' : ''}">${loader ? '<i class="sweep"><b></b><b></b></i>' : ''}<span>${esc(cfg.reg)}</span></span><p style="font-size:${size}px">${esc(cfg.model)}</p></div>`;
   App.screen({
     id: 'loading', node: '669:30755', title: 'Loading', className: 's0-load',
     render: () => `${U.status()}${U.browser()}
       <div class="ld-body"><span class="ld-logo">${U.logo()}</span>
-        <div class="ld-mid"><p class="ld-t">Opening your inspection...</p>${plate(16)}</div></div>
+        <div class="ld-mid"><p class="ld-t">Opening your inspection...</p>${plate(16, true)}</div></div>
       <div class="abar">${U.home()}</div>`,
     mount: () => { const t = setTimeout(() => App.go('welcome', true), 1900); return () => clearTimeout(t); },
   });
@@ -88,7 +89,8 @@
     id: 'welcome', node: '673:60308', title: 'Welcome (+ volume warning)', className: 's0-wel pg',
     vo: () => (st.volSeen ? WELCOME_VO : null),
     render: () => U.page({
-      nav: U.nav(`<button class="vo-pill ${App.VO.muted ? 'off' : ''}" data-action="voice"><img src="${I('volume.svg')}" alt=""><span>Voice guide</span></button>`),
+      // the voice guide is always on: the pill is a label, not a switch
+      nav: U.nav(`<span class="vo-pill"><img src="${I('volume.svg')}" alt=""><span>Voice guide</span></span>`),
       body: `<div class="wl-title"><p class="h">Let's inspect your car</p>${plate()}</div>
         <div class="wl-plan">${PLAN.map(([n, t, s, m]) => `<div class="wl-row"><span class="num">${n}</span><div class="tx"><div class="tr"><b>${t}</b><span class="time">${m}</span></div><p>${s}</p></div></div>`).join('')}</div>`,
       foot: `<p class="info-line ok"><img src="${I('circle-check-green.svg')}" alt="">Safe, secure, and guided step-by-step</p>
@@ -102,8 +104,6 @@
         el.querySelector('.ov').remove();
         App.VO.speak(WELCOME_VO);
       }
-      const v = e.target.closest('[data-action="voice"]');
-      if (v) { App.VO.setMuted(!App.VO.muted); v.classList.toggle('off', App.VO.muted); }
     }),
   });
 
