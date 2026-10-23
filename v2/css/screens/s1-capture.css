@@ -10,15 +10,16 @@
 .rco b { flex: 1; font: 600 14px/1.2 var(--ff-h); color: var(--text); }
 .rco.on b { color: var(--brand); }
 .rco .rh img { width: 20px; height: 20px; }
-.rco .rp { width: 190px; height: 279px; flex-shrink: 0; box-shadow: 0 5px 11px rgba(0,0,0,.1), 0 19px 19px rgba(0,0,0,.1); }
-.rco .rp img, .rco .rcd img { width: 100%; height: 100%; object-fit: cover; }
+/* the paper RC peeks out of the card: top of the page, cut flat and faded at the bottom (not by the card's corners) */
+.rco .rp { width: 88.8%; flex: 1 1 0; min-height: 0; overflow: hidden; -webkit-mask-image: linear-gradient(#000 60%, transparent); mask-image: linear-gradient(#000 60%, transparent); }
+.rco .rp img { width: 100%; height: auto; }
+.rco .rcd img { width: 100%; height: 100%; object-fit: cover; }
 .rco .rcd { flex: 1 0 0; min-height: 1px; aspect-ratio: 800/520; box-shadow: 0 5px 11px rgba(0,0,0,.1), 0 19px 19px rgba(0,0,0,.1); margin: auto 0; }
 
 /* document instruction modals (669:31424 paper · 669:31416 card front · 669:31408 card back) */
-.lmodal.doc .dimg { flex: 1 0 0; min-height: 1px; display: flex; align-items: center; justify-content: center; }
+.lmodal.doc .dimg { flex: 1 0 0; min-height: 1px; width: 100%; display: flex; align-items: center; justify-content: center; container-type: size; }
 .lmodal.doc .dimg img { box-shadow: 0 5px 11px rgba(0,0,0,.1), 0 19px 19px rgba(0,0,0,.1), 0 44px 26px rgba(0,0,0,.1); }
-.lmodal.doc.paper .dimg img { height: 205px; width: auto; transform: rotate(-90deg); }
-.lmodal.doc.card .dimg img { height: 100%; width: auto; aspect-ratio: 800/520; }
+/* turned: its width is the visible height, its height the visible width (paper 190 × 279) */
+.lmodal.doc.paper .dimg img { width: min(100cqh, 100cqw * 190 / 279); height: auto; transform: rotate(-90deg); }
+.lmodal.doc.card .dimg img { width: min(100cqw, 100cqh * 800 / 520); height: auto; aspect-ratio: 800/520; }
 
-/* video screens: dark rail behind the record button */
-.cam.vid .rail { padding: 0 20px; }

@@ -21,5 +21,5 @@ On a laptop, open the same link to see the flow inside a phone frame (the webcam
 - Photos that are too dark or blurry are flagged for retake/recapture by an on-device check.
 
 ## Structure
-`index.html` (version launcher) · per version: `vN/index.html` → `js/core.js` (router, camera, recording, voice-over), `js/components.js` (shared UI),
+`index.html` (redirects to `v2/`) · per version: `vN/index.html` → `js/core.js` (router, camera, recording, voice-over), `js/components.js` (shared UI),
 `js/screens/*.js` + `css/screens/*.css` (one file per flow stage), `assets/` (exported from Figma).

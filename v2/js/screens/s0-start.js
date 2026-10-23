@@ -55,7 +55,7 @@
     ]],
   ];
   App.screen({
-    id: 'items', title: 'Internal · demo setup', className: 's0-items pg', scroll: true,
+    id: 'items', title: 'Internal · demo setup', className: 's0-items pg',
     render: () => U.page({
       nav: U.nav(''),
       body: `<p class="internal">Internal · Demo setup — not shown to customers</p>

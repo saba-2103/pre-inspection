@@ -55,6 +55,10 @@
   let lastId = null, lastRot = null, lastVO = null;
   const currentId = () => { const m = location.hash.match(/^#\/([^?]+)/); return m ? decodeURIComponent(m[1]) : App.startId; };
   App.hashParam = (k) => new URLSearchParams(location.hash.split('?')[1] || '').get(k);
+  /* Instruction modals: dismissing one adds a history step (#/<id>?ready=1) without re-rendering, so Back from the
+     camera brings the modal back; arriving without ?ready shows it again. */
+  App.ready = () => App.hashParam('ready') === '1';
+  App.markReady = () => { history.pushState(null, '', `#/${App.current}?ready=1`); lastId = location.hash; };
 
   function render() {
     const framed = isFramed();
@@ -76,6 +80,9 @@
     const prompt = rot && !def.turnTo;
     const key = location.hash; // includes ?state=… so deep-link variants re-render
     if (lastId === key && App.current === id && lastRot === rot) return; // only a resize
+    // re-rendering the same screen (Done on a step, a status change…) keeps where the user had scrolled
+    const SCROLLERS = '.pg-body, .screen.scroll, .ag-right, .gal';
+    const keep = App.current === id ? [...stage.querySelectorAll(SCROLLERS)].map((n) => n.scrollTop) : null;
     if (App.cleanup) { try { App.cleanup(); } catch (e) { console.error(e); } App.cleanup = null; }
     App.current = id; lastId = key; lastRot = rot;
 
@@ -86,6 +93,14 @@
     el.dataset.o = def.orientation;
     el.innerHTML = def.render(ctx);
     stage.replaceChildren(el);
+    // desktop frame, landscape: the browser's address bar sits between the status bar and the screen (see layout)
+    if (framed && def.orientation === 'landscape') {
+      const c = document.createElement('div');
+      c.className = 'lchrome device-only';
+      c.innerHTML = U.status() + U.browser();
+      stage.appendChild(c);
+    }
+    if (keep) el.querySelectorAll(SCROLLERS).forEach((n, i) => { if (keep[i]) n.scrollTop = keep[i]; });
     App.cleanup = def.mount ? def.mount(el, ctx) || null : null;
     const vo = typeof def.vo === 'function' ? def.vo(ctx) : def.vo;
     // no voice-over behind the rotate prompt (it plays once the phone is turned); a re-render with the same
@@ -113,12 +128,17 @@
 
   /* Stage = design canvas scaled to the viewport. Portrait 390 wide (height flexes), landscape fits the 850×356 content
      area and grows edge to edge (34px status slot kept in layout but off-screen). rot = counter-rotate 90° cw/ccw. */
+  const BBAR = 56;
   function layout(def, framed, rot) {
     const land = def.orientation === 'landscape';
     let W = land ? 850 : 390, h = land ? 390 : 850, scale, tf;
     if (framed) {
-      scale = Math.min((innerWidth - 40) / W, (innerHeight - 40) / h, 1.25);
-      tf = `translate(${(innerWidth - W * scale) / 2}px, ${(innerHeight - h * scale) / 2}px) scale(${scale})`;
+      // desktop: the chosen device's screen (device-frame.js), fitted to the window
+      // landscape also shows the 56px browser bar, so fit 56 more and keep the 356 content area
+      const g = DeviceFrame.fit(land, W, land ? h + BBAR : h);
+      W = g.W; h = g.h - (land ? BBAR : 0); scale = g.scale;
+      tf = `translate(${g.left}px, ${g.top}px) scale(${scale})`;
+      DeviceFrame.mount();
     } else {
       // visual (rotated) viewport
       const vw = rot ? innerHeight : innerWidth, vh = rot ? innerWidth : innerHeight;
@@ -132,9 +152,15 @@
       else if (rot === 'ccw') tf = `translate(${land ? -34 * scale : 0}px, ${innerHeight}px) rotate(-90deg) scale(${scale})`;
       else tf = `translate(0, ${land ? -34 * scale : 0}px) scale(${scale})`;
     }
+    const bb = framed && land ? BBAR : 0; // the screen sits below the browser bar
     stage.style.width = W + 'px';
-    stage.style.height = h + 'px';
+    stage.style.height = h + bb + 'px';
+    stage.style.setProperty('--bb', bb + 'px');
     stage.style.transform = tf;
+    // stage size for responsive CSS (capture windows, modals, review panel, countdown)
+    stage.style.setProperty('--sw', W + 'px');
+    stage.style.setProperty('--sh', h + 'px');
+    stage.style.setProperty('--k', land ? (h - 34) / 356 : 1);
     App.scale = scale;
     App.rot = rot;
   }
@@ -194,7 +220,7 @@
   addEventListener('touchend', () => {
     if (ptrY0 === null) return;
     ptrY0 = null;
-    if (ptrDy >= PTR_TRIGGER) { ptr.classList.add('spin'); location.href = '../'; /* back to the version launcher */ } else ptrSet(0, true);
+    if (ptrDy >= PTR_TRIGGER) { ptr.classList.add('spin'); location.reload(); } else ptrSet(0, true);
   });
 
   /* ---------- helpers ---------- */

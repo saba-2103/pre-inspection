@@ -7,13 +7,14 @@
 
   /* Device chrome — only visible in the desktop phone frame (.device-only) */
   C.statusBar = () => `
-    <div class="status-bar device-only"><p class="time">08:15</p><img src="${A('core/statusIcons.svg')}" alt=""></div>`;
+    <div class="status-bar dc-sb device-only"><p class="time dc-t">${DeviceFrame.time()}</p>${DeviceFrame.statusIcons(A('core/statusIcons.svg'))}</div>`;
 
   C.chromeUI = () => `
     <div class="chrome-ui device-only">
-      <img class="ic" src="${A('core/chromeHome.svg')}" alt="">
+      <div class="dc-and dc-chrome"><img class="ic" src="${A('core/chromeHome.svg')}" alt="">
       <div class="cu-address"><div class="cu-content"><img src="${A('core/chromeSite.svg')}" alt=""><p class="cu-url">acmeinsurance.in<span>/pre-inspection/</span></p></div></div>
-      <div class="cu-right"><img class="ic" src="${A('core/chromePlus.svg')}" alt=""><img class="ic" src="${A('core/chromeTabs.svg')}" alt=""><img class="ic" src="${A('core/chromeMore.svg')}" alt=""></div>
+      <div class="cu-right"><img class="ic" src="${A('core/chromePlus.svg')}" alt=""><img class="ic" src="${A('core/chromeTabs.svg')}" alt=""><img class="ic" src="${A('core/chromeMore.svg')}" alt=""></div></div>
+      ${DeviceFrame.safari('acmeinsurance.in')}
     </div>`;
 
   C.homeIndicator = () => `<div class="home-indicator device-only"><div class="home-bar"></div></div>`;

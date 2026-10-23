@@ -116,7 +116,7 @@
   const page = (m) => U.page({ body: reviewBody(m), foot: reviewFoot(m) });
 
   App.screen({
-    id: 'review', node: '753:36841', title: 'Review (uploading / recapture / failed / ready)', className: 's3-review pg', scroll: true,
+    id: 'review', node: '753:36841', title: 'Review (uploading / recapture / failed / ready)', className: 's3-review pg',
     vo: () => { prepare(); const m = model(); return REVIEW_VO[m.mode](m); },
     render: () => { prepare(); const m = model(); st._mode = m.mode; return page(m); },
     mount: (el) => {
@@ -131,9 +131,10 @@
       }, 400);
       el.addEventListener('click', (e) => {
         const r = e.target.closest('[data-retake]');
-        if (r) { st.returnTo = 'review'; st.fixQueue = null; return App.go(r.dataset.retake); }
+        if (r) { st.returnTo = 'review'; st.fixQueue = null; return App.go(r.dataset.retake + '?ready=1'); }
         if (e.target.closest('[data-action="fix"]')) {
-          const q = model().attn.map((x) => x.go);
+          // retakes from Review go straight to the camera (no instruction modal)
+          const q = model().attn.map((x) => x.go + '?ready=1');
           st.returnTo = 'review'; st.fixQueue = q.slice(1);
           return App.go(q[0]);
         }
@@ -147,7 +148,7 @@
         const pv = e.target.closest('[data-preview]');
         if (pv) {
           const it = model().all.find((x) => x.key === pv.dataset.preview);
-          if (it) U.fullscreen(el, { cap: it.cap, src: thumbOf(it.cap, POSTER[it.key]), label: it.label, action: { label: 'Retake', onClick: () => { st.returnTo = 'review'; App.go(it.go); } } });
+          if (it) U.fullscreen(el, { cap: it.cap, src: thumbOf(it.cap, POSTER[it.key]), label: it.label, action: { label: 'Retake', onClick: () => { st.returnTo = 'review'; App.go(it.go + '?ready=1'); } } });
           return;
         }
         const g = e.target.closest('[data-group] .gh');
@@ -187,8 +188,45 @@
     mount: (el) => {
       const ta = el.querySelector('textarea');
       ta.addEventListener('input', () => { st.note = ta.value; });
-      let rec = null, iv = 0, audio = null, t0 = 0;
+      let rec = null, iv = 0, t0 = 0;
       const box = el.querySelector('[data-voice]');
+      // playback: pos = seconds at t0 (sample notes without audio run on the clock)
+      const pb = { audio: null, playing: false, pos: 0, t0: 0 };
+      const now = () => (pb.audio ? pb.audio.currentTime : pb.playing ? pb.pos + (Date.now() - pb.t0) / 1000 : pb.pos);
+      const paint = () => {
+        const v = st.voiceNote, b = el.querySelector('[data-action="vn-play"]');
+        if (!v || !b) return;
+        const t = Math.min(now(), v.duration), p = t / v.duration, bars = el.querySelectorAll('[data-wave] i');
+        bars.forEach((x, i) => x.classList.toggle('on', i / bars.length < p));
+        b.classList.toggle('on', pb.playing);
+        b.querySelector('img').src = I(pb.playing ? 'pause-16.svg' : 'play-20-w.svg');
+        el.querySelector('[data-vlen]').textContent = pb.playing || t > 0 ? `${U.fmt(t)} / ${U.fmt(v.duration)}` : `Voice note · ${U.fmt(v.duration)}`;
+      };
+      const pause = () => { pb.pos = now(); pb.playing = false; if (pb.audio) pb.audio.pause(); clearInterval(iv); paint(); };
+      const seek = (sec) => { pb.pos = sec; pb.t0 = Date.now(); if (pb.audio) try { pb.audio.currentTime = sec; } catch (e) {} paint(); };
+      const play = () => {
+        const v = st.voiceNote;
+        if (now() >= v.duration - 0.05) seek(0);
+        if (v.url) { pb.audio = pb.audio || new Audio(v.url); try { pb.audio.currentTime = pb.pos; } catch (e) {} pb.audio.play().catch(() => {}); }
+        pb.t0 = Date.now(); pb.playing = true;
+        clearInterval(iv);
+        iv = setInterval(() => { if (now() >= v.duration) { pause(); seek(0); } else paint(); }, 120);
+        paint();
+      };
+      const resetPlayback = () => { if (pb.audio) pb.audio.pause(); clearInterval(iv); Object.assign(pb, { audio: null, playing: false, pos: 0 }); };
+      // tap or drag on the waveform to jump; playback continues from there on release
+      let scrub = null;
+      const frac = (e) => { const r = scrub.getBoundingClientRect(); return Math.max(0, Math.min(1, (e.clientX - r.left) / r.width)); };
+      el.addEventListener('pointerdown', (e) => {
+        const w = e.target.closest('.vn.done [data-wave]');
+        if (!w || !st.voiceNote) return;
+        scrub = w; w.setPointerCapture(e.pointerId);
+        pause(); seek(frac(e) * st.voiceNote.duration);
+      });
+      el.addEventListener('pointermove', (e) => { if (scrub) seek(frac(e) * st.voiceNote.duration); });
+      const release = () => { if (!scrub) return; scrub = null; play(); };
+      el.addEventListener('pointerup', release);
+      el.addEventListener('pointercancel', release);
       const redraw = () => { box.innerHTML = voiceUI(); el.querySelector('.cta .btn').disabled = !!st.recNote; };
       const stopRec = async () => {
         clearInterval(iv);
@@ -206,10 +244,9 @@
       };
       const startRec = async () => {
         App.VO.stop();
-        if (audio) audio.pause();
+        resetPlayback();
         st.voiceNote = null; st.recNote = true;
         redraw();
-        App.VO.speak('Recording. Tap stop when you’re done.');
         try {
           const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
           const r = new MediaRecorder(stream), chunks = [];
@@ -232,23 +269,10 @@
         const act = a.dataset.action;
         if (act === 'vn-rec') startRec();
         if (act === 'vn-stop') stopRec();
-        if (act === 'vn-del') { if (audio) audio.pause(); st.voiceNote = null; redraw(); }
-        if (act === 'vn-play') {
-          const v = st.voiceNote, img = a.querySelector('img'), bars = [...el.querySelectorAll('[data-wave] i')], len = el.querySelector('[data-vlen]');
-          if (a.classList.contains('on')) { a.classList.remove('on'); img.src = I('play-20-w.svg'); if (audio) audio.pause(); clearInterval(iv); return; }
-          a.classList.add('on'); img.src = I('pause-16.svg');
-          if (v.url) { audio = new Audio(v.url); audio.play().catch(() => {}); }
-          const p0 = Date.now();
-          clearInterval(iv);
-          iv = setInterval(() => {
-            const s = audio && v.url ? audio.currentTime : (Date.now() - p0) / 1000, p = Math.min(1, s / v.duration);
-            bars.forEach((b, i) => b.classList.toggle('on', i / bars.length < p));
-            len.textContent = `${U.fmt(s)} / ${U.fmt(v.duration)}`;
-            if (p >= 1) { clearInterval(iv); a.classList.remove('on'); img.src = I('play-20-w.svg'); bars.forEach((b) => b.classList.remove('on')); len.textContent = `Voice note · ${U.fmt(v.duration)}`; }
-          }, 150);
-        }
+        if (act === 'vn-del') { resetPlayback(); st.voiceNote = null; redraw(); }
+        if (act === 'vn-play') (pb.playing ? pause() : play());
       });
-      return () => { clearInterval(iv); if (audio) audio.pause(); if (rec) { rec.r.stop(); rec.stream.getTracks().forEach((t) => t.stop()); st.recNote = false; } };
+      return () => { resetPlayback(); if (rec) { rec.r.stop(); rec.stream.getTracks().forEach((t) => t.stop()); st.recNote = false; } };
     },
   });
 

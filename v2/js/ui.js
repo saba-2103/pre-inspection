@@ -9,12 +9,14 @@
   U.I = I;
 
   /* ---------- device chrome (desktop phone frame only) ---------- */
-  U.status = () => `<div class="sbar device-only"><span>08:15</span><img src="${A('core/statusIcons.svg')}" alt=""></div>`;
+  // iOS (status bar + Safari) or Android (status bar + Chrome) per the picked device (device-frame.js)
+  U.status = () => `<div class="sbar dc-sb device-only"><span class="dc-t">${DeviceFrame.time()}</span>${DeviceFrame.statusIcons(A('core/statusIcons.svg'))}</div>`;
   U.browser = () => `
     <div class="bbar device-only">
-      <img src="${A('core/chromeHome.svg')}" alt="">
-      <div class="addr"><img src="${A('core/chromeSite.svg')}" alt=""><span>acmeinsurance.in<i>/pre-inspection/</i></span></div>
-      <img src="${A('core/chromePlus.svg')}" alt=""><img src="${A('core/chromeTabs.svg')}" alt=""><img src="${A('core/chromeMore.svg')}" alt="">
+      <div class="dc-and dc-chrome"><img src="${A('core/chromeHome.svg')}" alt="">
+        <div class="addr"><img src="${A('core/chromeSite.svg')}" alt=""><span>anaira.ai<i>/pre-inspection/</i></span></div>
+        <img src="${A('core/chromePlus.svg')}" alt=""><img src="${A('core/chromeTabs.svg')}" alt=""><img src="${A('core/chromeMore.svg')}" alt=""></div>
+      ${DeviceFrame.safari('anaira.ai')}
     </div>`;
   U.home = () => '<i class="homebar device-only"></i>';
 
@@ -54,24 +56,28 @@
       return `${i ? '<i class="dv"></i>' : ''}<span class="si ${s}"><img src="${A('cam2/st-' + s + '.svg')}" alt="">${esc(x.step)}</span>`;
     }).join('')}</div>`;
   };
-  U.camNav = ({ items, cur, light, left }) => `<div class="cnav ${light ? 'light' : ''}">${left != null ? left : U.logo(true)}${items ? U.stepper(items, cur) : ''}${U.vo()}</div>`;
+  U.camNav = ({ items, cur, light, left, right }) => `<div class="cnav ${light ? 'light' : ''}">${left != null ? left : U.logo(true)}${items ? U.stepper(items, cur) : ''}${right ? `<span class="nr">${U.vo()}${right}</span>` : U.vo()}</div>`;
 
   /* ---------- landscape camera screen ----------
      o = { items, cur, win: 'rc'|'odo'|'vin', badge, shutter: 'photo'|'video', railCls, railTop, railBottom, zoom, extra, navLeft } */
   U.cam = (o) => {
     const shutter = o.shutter === 'video'
-      ? `<span class="rtimer">0:00</span><button class="shutter rec" data-action="shutter" aria-label="Record"><i></i></button>`
+      ? `<button class="shutter rec" data-action="shutter" aria-label="Record"><i></i></button>`
       : `<button class="shutter" data-action="shutter" aria-label="Capture"><i></i></button>`;
     const torch = o.torch ? `<button class="torch-btn" data-action="torch" aria-label="Torch"><img src="${I('torch-off.svg')}" alt=""></button>` : '';
+    const zoom = o.zoom ? `<div class="zoom">${[1, 2, 3].map((z) => `<button data-zoom="${z}" class="${z === 1 ? 'on' : ''}">${z}x</button>`).join('')}</div>` : '';
+    // rail: shutter centred between the navbar and the bottom; torch / orbit / timer centred above it, zoom / last shot below
     return `
       <div class="cam-slot"></div>
       ${o.win ? `<div class="win w-${o.win}" data-win><i class="c tl"></i><i class="c tr"></i><i class="c bl"></i><i class="c br"></i></div>` : ''}
       ${U.status()}
-      ${U.camNav({ items: o.items, cur: o.cur, left: o.navLeft })}
+      ${U.camNav({ items: o.items, cur: o.cur, left: o.navLeft, right: o.navRight })}
       <div class="live" data-live><img src="${I('alert-16-dark.svg')}" alt=""><span></span></div>
       ${o.shutter === 'video' ? '<p class="countdown" data-count>3</p>' : ''}
-      <div class="rail ${o.railCls || ''}">${o.railTop || ''}${torch}${shutter}${o.railBottom || ''}</div>
-      ${o.zoom ? `<div class="zoom">${[1, 2, 3].map((z) => `<button data-zoom="${z}" class="${z === 1 ? 'on' : ''}">${z}x</button>`).join('')}</div>` : ''}
+      <div class="rail ${o.railCls || ''}">${o.shutter === 'video'
+        // video: timer right above the record button, minimum length right below it
+        ? `<div class="rs near-t"><span class="rtimer">0:00</span></div>${shutter}<div class="rs near-b"><span class="rmin">Min ${App.fast ? 3 : o.min || 10} secs</span></div>`
+        : `<div class="rs">${o.railTop || ''}${torch}</div>${shutter}<div class="rs">${o.railBottom || ''}${zoom}</div>`}</div>
       ${o.badge ? `<p class="ibadge" data-badge>${esc(o.badge)}</p>` : ''}
       ${o.extra || ''}`;
   };
@@ -106,14 +112,16 @@
   U.mountCam = (el, o) => {
     const slot = el.querySelector('.cam-slot');
     const offs = [];
+    let dead = false; // left the screen (Back) while a shot was in flight: drop it
     App.Camera.attach(slot, { fallbackImg: o.fallback, crop: o.crop }).then(() => { if (o.live !== false) offs.push(liveChecks(el)); });
+    const zoomTo = (z) => {
+      el.querySelectorAll('[data-zoom]').forEach((b) => b.classList.toggle('on', +b.dataset.zoom === z));
+      App.Camera.setZoom(slot, z);
+    };
+    if (el.querySelector('.zoom')) offs.push(pinchSteps(el, zoomTo));
     el.addEventListener('click', async (e) => {
       const z = e.target.closest('[data-zoom]');
-      if (z) {
-        el.querySelectorAll('[data-zoom]').forEach((b) => b.classList.toggle('on', b === z));
-        App.Camera.setZoom(slot, +z.dataset.zoom);
-        return;
-      }
+      if (z) return zoomTo(+z.dataset.zoom);
       const a = e.target.closest('[data-action]');
       if (!a) return;
       const act = a.dataset.action;
@@ -124,22 +132,72 @@
         try {
           flash(el);
           const cap = await App.Camera.snap(slot, el.querySelector('[data-win]'));
-          o.onShot(cap, el);
+          await wait(220);
+          if (o.hero && !dead) await hero(el, cap);
+          if (!dead) o.onShot(cap, el);
         } catch (err) { console.warn(err); }
         delete el.dataset.busy;
       } else if (o.onAction) o.onAction(act, el, a);
     });
     if (o.video) offs.push(recorder(el, o));
-    return () => { offs.forEach((f) => f && f()); App.Camera.torch(false); if (App.Camera.video) App.Camera.video.remove(); };
+    return () => { dead = true; offs.forEach((f) => f && f()); App.Camera.torch(false); if (App.Camera.video) App.Camera.video.remove(); };
   };
+  /* Odometer: pinch snaps between the zoom levels (out: 1x → 2x → 3x, in: back down), nothing in between.
+     Each pinch gesture moves one level per ~35% change in finger distance; ctrl + wheel (trackpad pinch) on desktop. */
+  function pinchSteps(el, zoomTo) {
+    const pts = new Map(), LV = [1, 2, 3];
+    let d0 = 0, acc = 0, wt = 0, spent = false;
+    const step = (dir) => { const i = LV.indexOf(App.Camera.zoom || 1) + dir; if (i >= 0 && i < LV.length) zoomTo(LV[i]); };
+    const dist = () => { const [a, b] = [...pts.values()]; return Math.hypot(a.x - b.x, a.y - b.y); };
+    const down = (e) => { if (e.target.closest('button, .ov, .fs')) return; pts.set(e.pointerId, { x: e.clientX, y: e.clientY }); if (pts.size === 2) d0 = dist(); };
+    const move = (e) => {
+      if (!pts.has(e.pointerId)) return;
+      pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
+      if (pts.size !== 2 || !d0) return;
+      const r = dist() / d0;
+      if (r > 1.35) { step(1); d0 = dist(); } else if (r < 0.74) { step(-1); d0 = dist(); }
+    };
+    const up = (e) => { pts.delete(e.pointerId); d0 = 0; };
+    const wheel = (e) => {
+      if (!e.ctrlKey || e.target.closest('.ov, .fs')) return;
+      e.preventDefault();
+      clearTimeout(wt); wt = setTimeout(() => { acc = 0; spent = false; }, 250);
+      if (spent) return; // one level per gesture
+      acc += e.deltaY;
+      if (Math.abs(acc) > 40) { step(acc < 0 ? 1 : -1); spent = true; }
+    };
+    el.addEventListener('pointerdown', down);
+    el.addEventListener('pointermove', move);
+    el.addEventListener('pointerup', up);
+    el.addEventListener('pointercancel', up);
+    el.addEventListener('wheel', wheel, { passive: false });
+    return () => clearTimeout(wt);
+  }
   // Torch (855:81742 off / 855:81738 on)
   U.torchIcon = (el, on) => { const b = el.querySelector('.torch-btn'); if (b) { b.classList.toggle('on', on); b.querySelector('img').src = I(on ? 'torch-on.svg' : 'torch-off.svg'); } };
+  const wait = (ms) => new Promise((r) => setTimeout(r, ms));
   function flash(el) {
     const f = document.createElement('div');
     f.className = 'flash';
     el.appendChild(f);
-    requestAnimationFrame(() => requestAnimationFrame(() => (f.style.opacity = '0')));
-    setTimeout(() => f.remove(), 300);
+    void f.offsetWidth; // start the fade from full white
+    f.style.opacity = '0';
+    setTimeout(() => f.remove(), 450);
+  }
+  // box of a node in screen (stage) units, unaffected by the stage scale / rotation
+  const box = (n, root) => { let x = 0, y = 0; const w = n.offsetWidth, h = n.offsetHeight; for (; n && n !== root; n = n.offsetParent) { x += n.offsetLeft; y += n.offsetTop; } return { x, y, w, h }; };
+  /* the shot shrinks from the camera view into the last-shot holder (hero) */
+  function hero(el, cap) {
+    const to = el.querySelector('.lthumb');
+    if (!to) return Promise.resolve();
+    const a = box(el.querySelector('.cam-slot'), el), b = box(to, el);
+    const img = document.createElement('img');
+    img.className = 'hero'; img.src = cap.url; img.alt = '';
+    Object.assign(img.style, { left: a.x + 'px', top: a.y + 'px', width: a.w + 'px', height: a.h + 'px' });
+    el.appendChild(img);
+    void img.offsetWidth;
+    Object.assign(img.style, { left: b.x + 'px', top: b.y + 'px', width: b.w + 'px', height: b.h + 'px', borderRadius: '8px' });
+    return wait(480);
   }
   const fmt = (s) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
   U.fmt = fmt;
@@ -282,17 +340,75 @@
   };
 
   /* full-screen preview (Captured Preview 669:30983) */
-  U.fullscreen = (el, { cap, src, label, sub, action }) => {
+  U.fullscreen = (el, { cap, src, label, sub, action, flip }) => {
     const f = document.createElement('div');
     f.className = 'fs';
     const video = cap && cap.kind === 'video' && !cap.sample;
-    f.innerHTML = `${video ? `<video src="${cap.url}" muted loop playsinline autoplay controls></video>` : `<img src="${src}" alt="">`}
+    f.innerHTML = `<div class="fs-media">${video ? `<video src="${cap.url}" muted loop playsinline autoplay controls></video>` : `<img class="${flip ? 'flip' : ''}" src="${src}" alt="">`}</div>
       ${label ? `<div class="fl"><b>${esc(label)}</b>${sub ? `<span>${esc(sub)}</span>` : ''}</div>` : ''}
       ${action ? `<button class="btn fs-act">${esc(action.label)}</button>` : ''}
       <button class="x" aria-label="Close"><img src="${I('x-24-w.svg')}" alt=""></button>`;
     f.querySelector('.x').addEventListener('click', (e) => { e.stopPropagation(); f.remove(); });
     if (action) f.querySelector('.fs-act').addEventListener('click', (e) => { e.stopPropagation(); action.onClick(); });
+    if (!video) zoomable(f.querySelector('.fs-media'));
     el.appendChild(f);
     return f;
   };
+
+  /* pinch (or ctrl + wheel) to zoom, drag to pan when zoomed, double tap: zoom in / back to fit */
+  function zoomable(wrap) {
+    const img = wrap.firstElementChild, pts = new Map();
+    let s = 1, x = 0, y = 0, g = null, tap = 0, moved = false;
+    // screen delta → stage delta (the stage is scaled and may be counter-rotated)
+    const toStage = (dx, dy) => { const k = App.scale || 1; return App.rot === 'cw' ? [dy / k, -dx / k] : App.rot === 'ccw' ? [-dy / k, dx / k] : [dx / k, dy / k]; };
+    const rel = (p) => { const r = wrap.getBoundingClientRect(); return toStage(p.x - r.left - r.width / 2, p.y - r.top - r.height / 2); };
+    const apply = (anim) => {
+      const mx = (wrap.offsetWidth * (s - 1)) / 2, my = (wrap.offsetHeight * (s - 1)) / 2;
+      x = Math.max(-mx, Math.min(mx, x)); y = Math.max(-my, Math.min(my, y));
+      img.style.transition = anim ? 'transform .25s' : 'none';
+      img.style.transform = `translate(${x}px, ${y}px) scale(${s})${img.classList.contains('flip') ? ' scaleX(-1)' : ''}`;
+    };
+    const zoomAt = (c, ns, anim) => { ns = Math.max(1, Math.min(5, ns)); x = c[0] - ((c[0] - x) * ns) / s; y = c[1] - ((c[1] - y) * ns) / s; s = ns; apply(anim); };
+    const start = () => {
+      const p = [...pts.values()];
+      if (p.length === 2) { const m = rel({ x: (p[0].x + p[1].x) / 2, y: (p[0].y + p[1].y) / 2 }); g = { d: Math.hypot(p[0].x - p[1].x, p[0].y - p[1].y), s, px: (m[0] - x) / s, py: (m[1] - y) / s }; }
+      else if (p.length === 1) g = { x0: p[0].x, y0: p[0].y, x, y };
+    };
+    wrap.addEventListener('pointerdown', (e) => { try { wrap.setPointerCapture(e.pointerId); } catch (err) {} pts.set(e.pointerId, { x: e.clientX, y: e.clientY }); moved = pts.size > 1; start(); });
+    wrap.addEventListener('pointermove', (e) => {
+      if (!pts.has(e.pointerId)) return;
+      pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
+      const p = [...pts.values()];
+      if (p.length === 2 && g.d) {
+        const m = rel({ x: (p[0].x + p[1].x) / 2, y: (p[0].y + p[1].y) / 2 });
+        s = Math.max(1, Math.min(5, (g.s * Math.hypot(p[0].x - p[1].x, p[0].y - p[1].y)) / g.d));
+        x = m[0] - g.px * s; y = m[1] - g.py * s; apply();
+      } else if (p.length === 1 && g.x0 != null) {
+        const [dx, dy] = toStage(e.clientX - g.x0, e.clientY - g.y0);
+        if (Math.abs(dx) + Math.abs(dy) > 6) moved = true;
+        if (s > 1) { x = g.x + dx; y = g.y + dy; apply(); }
+      }
+    });
+    const end = (e) => {
+      if (!pts.delete(e.pointerId)) return;
+      if (!pts.size && !moved) {
+        if (Date.now() - tap < 320) { tap = 0; if (s > 1) { s = 1; x = y = 0; apply(true); } else zoomAt(rel({ x: e.clientX, y: e.clientY }), 2.5, true); }
+        else tap = Date.now();
+      }
+      start();
+    };
+    wrap.addEventListener('pointerup', end);
+    wrap.addEventListener('pointercancel', end);
+    wrap.addEventListener('wheel', (e) => { e.preventDefault(); zoomAt(rel({ x: e.clientX, y: e.clientY }), s * Math.exp(-e.deltaY * 0.01)); }, { passive: false });
+  }
+
+  /* every picture in a modal or sheet opens full screen (not the option cards / orbit diagram) */
+  document.addEventListener('click', (e) => {
+    const t = e.target.closest('#stage .ov img, #stage .ov .bg');
+    if (!t || t.closest('button, .orbit, .logo')) return;
+    const img = t.tagName === 'IMG' ? t : t.querySelector('img');
+    const scr = img.closest('.screen'), m = img.closest('.lmodal, .sheet, .pmodal');
+    const title = m && m.querySelector('.mt, .st, .vt');
+    U.fullscreen(scr, { src: img.src, label: title ? title.textContent : '', flip: img.classList.contains('flip') });
+  });
 })();

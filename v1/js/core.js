@@ -119,10 +119,9 @@
     if (params.get('shot')) {
       scale = 1; h = H;
     } else if (framed) {
-      scale = Math.min((innerWidth - 40) / W, (innerHeight - 40) / H, 1.25);
-      h = H;
-      left = (innerWidth - W * scale) / 2;
-      top = (innerHeight - H * scale) / 2;
+      // desktop: the chosen device's screen (device-frame.js), fitted to the window
+      ({ W, h, scale, left, top } = DeviceFrame.fit(land, W, H));
+      DeviceFrame.mount();
     } else if (land) {
       // landscape phones: fit the 850×356 content area (390 minus status bar), then grow the stage to fill the
       // whole screen edge to edge; the 34px status-bar slot stays in layout (so Figma offsets hold) but off-screen
@@ -198,7 +197,7 @@
   addEventListener('touchend', () => {
     if (ptrY0 === null) return;
     ptrY0 = null;
-    if (ptrDy >= PTR_TRIGGER) { ptr.classList.add('spin'); location.href = '../'; /* back to the version launcher */ }
+    if (ptrDy >= PTR_TRIGGER) { ptr.classList.add('spin'); location.reload(); }
     else ptrSet(0, true);
   });
   App.rerender = () => { lastShown = null; render(); };

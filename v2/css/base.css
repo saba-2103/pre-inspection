@@ -20,6 +20,11 @@ img { display: block; }
 /* ---------- stage & screen ---------- */
 #stage { position: fixed; left: 0; top: 0; transform-origin: 0 0; overflow: hidden; }
 html.framed #stage { border-radius: 28px; box-shadow: 0 0 0 10px #22252b, 0 30px 80px rgba(0,0,0,.6); }
+/* framed landscape: status bar + browser bar on top (.lchrome), the screen below the browser bar; its own status
+   slot sits under the chrome so every 34px offset in the screen still holds */
+html.framed #stage > .screen[data-o="landscape"] { position: absolute; left: 0; right: 0; top: var(--bb, 0px); height: calc(100% - var(--bb, 0px)); }
+.lchrome { position: absolute; z-index: 55; left: 0; right: 0; top: 0; flex-direction: column; }
+.lchrome .sbar { position: relative; }
 .screen { position: relative; width: 100%; height: 100%; overflow: hidden; display: flex; flex-direction: column; background: var(--page); }
 .screen.scroll { overflow-y: auto; overflow-x: hidden; -webkit-overflow-scrolling: touch; }
 .device-only { display: none !important; }
@@ -31,7 +36,8 @@ html.phone-land .sbar.device-only { display: flex !important; visibility: hidden
 .sbar span { font: 600 15px/1 var(--ff); letter-spacing: -.3px; color: #000; width: 40px; text-align: center; }
 .sbar img { width: 67px; height: 11.333px; }
 .bbar { background: #fff; width: 100%; height: 56px; flex-shrink: 0; gap: 12px; align-items: center; padding: 12px 14px 8px 10px; position: relative; z-index: 2; }
-.bbar > img { width: 24px; height: 24px; flex-shrink: 0; }
+.bbar .dc-chrome { gap: 12px; }
+.bbar .dc-chrome > img { width: 24px; height: 24px; flex-shrink: 0; }
 .bbar .addr { flex: 1 0 0; min-width: 1px; height: 36px; border-radius: 20px; background: #f2f4f7; display: flex; align-items: center; gap: 10px; padding-left: 13px; overflow: hidden; }
 .bbar .addr img { width: 14px; height: 13px; }
 .bbar .addr span { font: 400 15px/13px 'Roboto', sans-serif; color: #000; white-space: nowrap; }
@@ -52,7 +58,9 @@ html.framed .pg::before { top: 90px; }
 .pg > :not(.ov):not(.fs) { position: relative; }
 .nav { height: 60px; flex-shrink: 0; display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; z-index: 3; }
 .nav.center { justify-content: center; }
-.pg-body { flex: 1 0 auto; display: flex; flex-direction: column; gap: 24px; padding: 20px; }
+.pg-body { flex: 1 1 0; min-height: 0; overflow-y: auto; overflow-x: hidden; -webkit-overflow-scrolling: touch; scrollbar-width: none; display: flex; flex-direction: column; gap: 24px; padding: 20px; }
+.pg-body::-webkit-scrollbar { display: none; }
+.pg-body > * { flex-shrink: 0; } /* the body scrolls; the action bar stays at the bottom */
 .ptitle { display: flex; flex-direction: column; gap: 8px; }
 .ptitle .h { font: 700 28px/1.2 var(--ff-h); color: var(--brand-strong); }
 .ptitle .s { font: 400 16px/1.5 var(--ff); color: var(--body); }
@@ -123,7 +131,7 @@ html.framed .pg::before { top: 90px; }
 html.framed .screen:not([data-o="landscape"]) > .ov { top: 90px; }
 .screen[data-o="landscape"] > .ov { top: 34px; }
 @keyframes ov-in { from { opacity: 0; } }
-.sheet { position: absolute; left: 8px; right: 8px; bottom: 8px; background: #fff; border-radius: 16px; padding: 12px 24px 24px; display: flex; flex-direction: column; align-items: center; gap: 32px; box-shadow: var(--shadow-modal); animation: sheet-in .28s cubic-bezier(.2,.8,.2,1); max-height: calc(100% - 16px); }
+.sheet { position: absolute; left: 8px; right: 8px; bottom: 8px; background: #fff; border-radius: 16px; padding: 12px 24px 24px; display: flex; flex-direction: column; align-items: center; gap: 32px; box-shadow: var(--shadow-modal); animation: sheet-in .28s cubic-bezier(.2,.8,.2,1); max-height: calc(100% - 16px); overflow: hidden; }
 @keyframes sheet-in { from { transform: translateY(40px); opacity: 0; } }
 .sheet .handle { width: 48px; height: 4px; border-radius: 12px; background: var(--placeholder); flex-shrink: 0; }
 .sheet .st { font: 700 24px/1.2 var(--ff-h); color: var(--brand); text-align: center; width: 100%; }
@@ -131,9 +139,10 @@ html.framed .screen:not([data-o="landscape"]) > .ov { top: 90px; }
 .sheet .cta p { font: 400 14px/1.5 var(--ff); color: var(--text); text-align: center; }
 .pmodal { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); width: 358px; background: #fff; border-radius: 16px; padding: 24px; display: flex; flex-direction: column; align-items: center; box-shadow: var(--shadow-modal); animation: pm-in .22s ease-out; }
 @keyframes pm-in { from { transform: translate(-50%, -46%); opacity: 0; } }
-/* landscape modal (480 × 292, 32px above the bottom) */
-.lmodal { position: absolute; left: 50%; bottom: 32px; transform: translateX(-50%); width: 480px; height: 292px; background: #fff; border-radius: 16px; padding: 20px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 20px; overflow: hidden; box-shadow: var(--shadow-modal); animation: lm-in .22s ease-out; }
-@keyframes lm-in { from { transform: translate(-50%, 12px); opacity: 0; } }
+/* landscape modal (480 × 292 in the 850 × 356 area): always centred, 32px clear of the edges, keeps its aspect ratio */
+.lmodal { --mw: 480; --mh: 292; --h: min(calc(var(--sh) - 98px), calc((var(--sw) - 64px) * var(--mh) / var(--mw)));
+  position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); height: var(--h); width: calc(var(--h) * var(--mw) / var(--mh)); background: #fff; border-radius: 16px; padding: 20px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 20px; overflow: hidden; box-shadow: var(--shadow-modal); animation: lm-in .22s ease-out; }
+@keyframes lm-in { from { transform: translate(-50%, calc(-50% + 12px)); opacity: 0; } }
 .lmodal .mt { font: 600 24px/1.2 var(--ff-h); color: var(--brand-strong); text-align: center; width: 100%; }
 .lmodal .ms { font: 400 14px/1.2 var(--ff-h); color: var(--text); text-align: center; width: 100%; }
 .lmodal .row { display: flex; gap: 10px; width: 100%; }
@@ -151,13 +160,18 @@ html.framed .screen:not([data-o="landscape"]) > .ov { top: 90px; }
 .screen[data-o="landscape"] { background: #000; }
 .screen[data-o="landscape"] > .sbar { position: absolute; left: 0; top: 0; }
 .cam-slot { position: absolute; inset: 0; overflow: hidden; background: #000; container-type: size; }
+.screen.cam { touch-action: none; } /* pinch is ours (odometer zoom), not the browser's */
 .cam-slot video, .cam-slot .cam-fallback { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; transition: transform .2s; }
 .cam-slot .cam-fallback.crop-l, .cam-slot .cam-fallback.crop-r { inset: auto; top: -16.67%; width: 133.33%; height: 133.33%; left: 0; }
 .cam-slot .cam-fallback.crop-r { left: -33.33%; }
 html.rot .cam-slot video { left: 50%; top: 50%; inset: auto; width: 100cqh; height: 100cqw; transform: translate(-50%, -50%) rotate(-90deg); } /* rotation lock */
-.flash { position: absolute; inset: 0; background: #fff; opacity: .8; z-index: 50; transition: opacity .25s; pointer-events: none; }
-/* capture window: 70% shade around it, faint outline, corners coloured by the live check */
-.win { position: absolute; z-index: 1; left: 50%; border-radius: 20px; box-shadow: 0 0 0 3000px var(--overlay); pointer-events: none; --fc: #fff; }
+.flash { position: absolute; inset: 0; background: #fff; z-index: 50; transition: opacity .4s ease-in; pointer-events: none; }
+.hero { position: absolute; z-index: 49; object-fit: cover; border: .5px solid #fff; transition: all .45s cubic-bezier(.3,.7,.2,1); pointer-events: none; }
+/* capture window: 70% shade around it, faint outline, corners coloured by the live check. Scales with the screen:
+   centred in the band between the navbar and 24px above the bottom, at most as wide as the space between the rails. */
+.win { --h: min(calc((var(--sh) - 118px) * var(--fh)), calc((var(--sw) - 250px) * var(--dh) / var(--dw)));
+  height: var(--h); width: calc(var(--h) * var(--dw) / var(--dh)); left: calc(50% - var(--h) * var(--dw) / var(--dh) / 2); top: calc(94px + (var(--sh) - 118px - var(--h)) * var(--ft));
+  position: absolute; z-index: 1; border-radius: 20px; box-shadow: 0 0 0 3000px var(--overlay); pointer-events: none; --fc: #fff; }
 .win::before { content: ''; position: absolute; inset: 0; border-radius: 20px; border: 2px solid rgba(255,255,255,.3); }
 .win[data-state="dark"], .win[data-state="blurry"] { --fc: var(--warn-accent); }
 .win .c { position: absolute; width: 34px; height: 34px; border: 4px solid var(--fc); transition: border-color .25s; }
@@ -165,9 +179,9 @@ html.rot .cam-slot video { left: 50%; top: 50%; inset: auto; width: 100cqh; heig
 .win .tr { right: -2px; top: -2px; border-left: 0; border-bottom: 0; border-radius: 0 16px 0 0; }
 .win .bl { left: -2px; bottom: -2px; border-right: 0; border-top: 0; border-radius: 0 0 0 16px; }
 .win .br { right: -2px; bottom: -2px; border-left: 0; border-top: 0; border-radius: 0 0 16px 0; }
-.win.w-rc { width: 480px; height: 272px; margin-left: -240px; top: 94px; }
-.win.w-odo { width: 600px; height: 272px; margin-left: -300px; top: 94px; }
-.win.w-vin { width: 480px; height: 180px; margin-left: -240px; top: 134px; }
+.win.w-rc { --dw: 480; --dh: 272; --fh: 1; --ft: .5; }
+.win.w-odo { --dw: 600; --dh: 272; --fh: 1; --ft: .5; }
+.win.w-vin { --dw: 480; --dh: 180; --fh: calc(180 / 272); --ft: calc(40 / 92); }
 /* header over the camera: status slot + navbar (logo · stepper · voice) */
 .cnav { position: absolute; z-index: 7; left: 0; right: 0; top: 34px; height: 60px; display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; background: linear-gradient(180deg, rgba(12,17,38,.75), rgba(12,17,38,0)); }
 .cnav.light { background: none; }
@@ -177,38 +191,48 @@ html.rot .cam-slot video { left: 50%; top: 50%; inset: auto; width: 100cqh; heig
 .stepper .si.cur { background: var(--page); }
 .stepper .si.todo { box-shadow: inset 0 0 0 1px var(--line-muted); color: var(--tertiary); }
 .stepper .dv { width: 20px; height: 1px; background: var(--line-muted); opacity: .7; }
-/* right rail: shutter (+ status ring / thumbnails) */
-.rail { position: absolute; z-index: 5; right: 0; bottom: 0; height: 355px; padding: 0 20px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; }
+/* right rail, full height under the status bar: shutter centred between the navbar and the bottom, the slots above and
+   below it hold the torch / orbit / timer and the zoom / last shot, each centred in its space */
+.rail { position: absolute; z-index: 5; right: 0; top: 34px; bottom: 0; padding: 60px 20px 0; display: grid; grid-template-rows: 1fr auto 1fr; justify-items: center; align-items: center; }
+.rail .rs { display: flex; flex-direction: column; align-items: center; justify-content: center; }
 .rail.dark { background: var(--overlay); }
-.torch-btn { width: 40px; height: 40px; border-radius: 32px; border: 1px solid #fff; background: linear-gradient(180deg, var(--subtle), var(--brand-soft)); display: flex; align-items: center; justify-content: center; flex-shrink: 0; position: absolute; left: 50%; top: 85.5px; margin-left: -20px; }
+.rail .rs.near-t { align-self: end; padding-bottom: 12px; }
+.rail .rs.near-b { align-self: start; padding-top: 8px; }
+.rmin { font: 500 11px/1.2 var(--ff); color: rgba(255,255,255,.8); white-space: nowrap; }
+.torch-btn { width: 40px; height: 40px; border-radius: 32px; border: 1px solid #fff; background: linear-gradient(180deg, var(--subtle), var(--brand-soft)); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
 .torch-btn img { width: 20px; height: 20px; }
 .torch-btn.on { box-shadow: 0 0 0 3px rgba(253,176,34,.6); }
 .shutter { width: 72px; height: 72px; border-radius: 36px; border: 4px solid #fff; display: flex; align-items: center; justify-content: center; flex-shrink: 0; position: relative; }
 .shutter > i { width: 56px; height: 56px; border-radius: 28px; background: #fff; transition: all .2s; }
 .shutter:active > i { transform: scale(.92); }
 .shutter.rec > i { background: var(--err); }
-.screen[data-rec="on"] .shutter.rec > i { width: 24px; height: 24px; border-radius: 6px; }
-.screen[data-rec="count"] .shutter { opacity: .5; pointer-events: none; }
+/* recording: stop button (669:31377) */
+.screen[data-rec="on"] .shutter.rec, .screen[data-rec="saving"] .shutter.rec { border: 0; background: url(../assets/ui/stop-rec.svg) center / 72px 72px no-repeat; }
+.screen[data-rec="on"] .shutter.rec > i, .screen[data-rec="saving"] .shutter.rec > i { opacity: 0; }
+.screen[data-rec="count"] .shutter { opacity: .3; pointer-events: none; }
 .shutter.wait { opacity: .6; }
-.rtimer { position: absolute; left: 50%; transform: translateX(-50%); top: 91.5px; width: 48px; padding: 4px 8px; border-radius: 32px; background: var(--err-strong); font: 500 14px/1.25 var(--ff-h); color: #fff; text-align: center; display: none; }
+.rtimer { width: 48px; padding: 4px 8px; border-radius: 32px; background: var(--err-strong); font: 500 14px/1.25 var(--ff-h); color: #fff; text-align: center; display: none; }
 .screen[data-rec="on"] .rtimer, .screen[data-rec="saving"] .rtimer { display: block; }
-.countdown { position: absolute; z-index: 4; left: 0; right: 0; top: 130px; text-align: center; font: 600 64px/1 var(--ff-h); color: #fff; text-shadow: 0 2px 12px rgba(0,0,0,.35); pointer-events: none; display: none; }
-.screen[data-rec="count"] .countdown { display: block; animation: cd-pop 1s ease-out infinite; }
+/* 3-2-1 (Capture countdown 779:49872): 80px at the design height, centred on the screen */
+.countdown { position: absolute; z-index: 4; left: 0; right: 0; top: 34px; bottom: 0; align-items: center; justify-content: center; font: 600 calc(80px * var(--k, 1))/1 var(--ff-h); color: #fff; text-shadow: 0 2px 12px rgba(0,0,0,.25); pointer-events: none; display: none; }
+.screen[data-rec="count"] .countdown { display: flex; animation: cd-pop 1s ease-out infinite; }
 @keyframes cd-pop { 0% { transform: scale(1.25); opacity: 0; } 20% { transform: scale(1); opacity: 1; } 100% { opacity: 1; } }
 /* info badge + live pill */
 .ibadge { position: absolute; z-index: 4; left: 50%; bottom: 40px; transform: translateX(-50%); padding: 4px 10px; border-radius: 32px; background: var(--overlay); font: 500 11px/1.2 var(--ff); color: #fff; white-space: nowrap; pointer-events: none; }
 .live { position: absolute; z-index: 4; left: 50%; top: 108px; transform: translateX(-50%); display: none; gap: 8px; align-items: center; padding: 8px 14px 8px 12px; border-radius: 32px; background: var(--warn-accent); font: 600 13px/normal var(--ff); color: var(--text); white-space: nowrap; pointer-events: none; }
 .live img { width: 16px; height: 16px; }
 .live.on { display: flex; }
-/* zoom toggle (odometer) */
-.zoom { position: absolute; z-index: 6; right: 37px; bottom: 30px; display: flex; flex-direction: column; gap: 4px; }
+/* zoom toggle (odometer), in the rail below the shutter */
+.zoom { display: flex; flex-direction: column; gap: 4px; }
 .zoom button { padding: 6px 10px; border-radius: 32px; font: 600 14px/normal var(--ff); color: #fff; }
 .zoom button.on { background: #fff; color: var(--text); }
 
 /* ---------- capture review panel (Captured / Recorded / Error, 678:65329) ---------- */
 .screen.vpage { background: #fff; }
-.vrow { position: absolute; left: 0; right: 0; top: 34px; bottom: 0; display: flex; align-items: center; gap: 20px; padding: 20px 24px; }
-.vimg { position: relative; flex: 1 0 0; min-width: 1px; align-self: center; aspect-ratio: 482/287; max-height: 100%; border-radius: 12px; overflow: hidden; background: var(--sunken); display: flex; flex-direction: column; justify-content: space-between; align-items: flex-end; padding: 20px; }
+/* the photo keeps its 482 × 287 ratio and fills the space; the side panel is exactly as tall as the photo */
+.vrow { --iw: min(calc(var(--sw) - 368px), calc((var(--sh) - 74px) * 482 / 287)); --ih: calc(var(--iw) * 287 / 482);
+  position: absolute; left: 0; right: 0; top: 34px; bottom: 0; display: flex; align-items: center; justify-content: center; gap: 20px; padding: 20px 24px; }
+.vimg { position: relative; flex: none; width: var(--iw); height: var(--ih); border-radius: 12px; overflow: hidden; background: var(--sunken); display: flex; flex-direction: column; justify-content: space-between; align-items: flex-end; padding: 20px; }
 .vimg > img, .vimg > video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
 .vimg.dark::after { content: ''; position: absolute; inset: 0; background: var(--overlay); }
 .vimg.soft > img { filter: blur(2.5px); }
@@ -220,7 +244,7 @@ html.rot .cam-slot video { left: 50%; top: 50%; inset: auto; width: 100cqh; heig
 .player .pb { flex: 1 0 0; height: 4px; background: rgba(255,255,255,.3); border-radius: 32px; overflow: hidden; }
 .player .pb i { display: block; height: 100%; width: 0; background: #fff; border-radius: 32px; }
 .player span { font: 500 10px/1.25 var(--ff-h); color: #fff; white-space: nowrap; }
-.vside { width: 300px; flex-shrink: 0; align-self: stretch; display: flex; flex-direction: column; justify-content: space-between; gap: 14px; }
+.vside { width: 300px; flex-shrink: 0; height: var(--ih); display: flex; flex-direction: column; justify-content: space-between; gap: 14px; }
 .vside .top, .vside .bot { display: flex; flex-direction: column; gap: 14px; }
 .vside .lab { font: 600 13px/normal var(--ff); color: var(--muted); }
 .vside .head { display: flex; align-items: center; gap: 8px; }
@@ -234,15 +258,18 @@ html.rot .cam-slot video { left: 50%; top: 50%; inset: auto; width: 100cqh; heig
 .vside .tip.err { font-size: 12px; line-height: 1.2; color: var(--err-strong); }
 .vside .tip.err img { width: 16px; height: 16px; }
 .vside .row { display: flex; gap: 10px; }
-/* full-screen preview */
-.fs { position: absolute; inset: 0; z-index: 45; background: #000; display: flex; align-items: center; justify-content: center; }
-.fs > img, .fs > video { max-width: 100%; max-height: 100%; object-fit: contain; }
-.fs .x { position: absolute; right: 20px; top: 44px; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; }
+/* full-screen preview: media fills the screen (contain); pictures pinch / double-tap zoom */
+.fs { position: absolute; inset: 0; z-index: 45; background: #000; }
+html.framed .screen:not([data-o="landscape"]) > .fs { top: 90px; }
+.screen[data-o="landscape"] > .fs { top: 34px; }
+.fs-media { position: absolute; inset: 0; overflow: hidden; touch-action: none; }
+.fs-media > img, .fs-media > video { width: 100%; height: 100%; object-fit: contain; max-width: none; transform-origin: 50% 50%; user-select: none; -webkit-user-drag: none; }
+.fs .x { position: absolute; z-index: 1; right: 12px; top: 12px; width: 40px; height: 40px; border-radius: 20px; background: rgba(0,0,0,.35); display: flex; align-items: center; justify-content: center; }
 .fs .x img { width: 24px; height: 24px; }
-.fs .fl { position: absolute; left: 12px; top: 44px; display: flex; flex-direction: column; gap: 4px; }
+.fs .fl { position: absolute; z-index: 1; left: 12px; top: 12px; padding: 4px 8px; border-radius: 8px; background: rgba(0,0,0,.35); display: flex; flex-direction: column; gap: 4px; pointer-events: none; }
 .fs .fl b { font: 500 16px/1.2 var(--ff-h); color: #fff; }
 .fs .fl span { font: 400 12px/1.2 var(--ff); color: rgba(255,255,255,.75); }
-.fs .fs-act { position: absolute; left: 50%; bottom: 32px; transform: translateX(-50%); }
+.fs .fs-act { position: absolute; z-index: 1; left: 50%; bottom: 32px; transform: translateX(-50%); }
 
 /* ---------- rotate prompt (V1's "Please rotate your phone" modal, Figma 669:31280) ---------- */
 .turn-prompt { position: absolute; inset: 0; z-index: 60; background: var(--overlay); display: flex; align-items: center; justify-content: center; }

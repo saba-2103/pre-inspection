@@ -14,7 +14,7 @@
   /* ---------- photo item: [modal] → camera → review ----------
      o = { id, node, title, stage, key(), win, fallback(), badge, modal() → {html, vo} | null, vo, ask(), mode, zoom, okNode } */
   U.photoStep = function (o) {
-    const modal = () => (o.modal && !st.seen[o.id] ? o.modal() : null);
+    const modal = () => (o.modal && !App.ready() ? o.modal() : null);
     App.screen({
       id: o.id, node: o.node, title: o.title, orientation: 'landscape', className: 'cam',
       vo: () => { const m = modal(); return m ? m.vo : o.vo; },
@@ -26,7 +26,7 @@
           fallback: o.fallback(),
           onShot: (cap) => { App.save(o.key(), cap); App.go(o.id + '-ok'); },
           onAction: (act) => {
-            if (act === 'got-it') { st.seen[o.id] = true; el.querySelector('.ov').remove(); App.VO.speak(o.vo); }
+            if (act === 'got-it') { App.markReady(); el.querySelector('.ov').remove(); App.VO.speak(o.vo); }
             if (o.onAction) o.onAction(act, el);
           },
         });
@@ -39,7 +39,7 @@
       mount: (el) => U.mountVerdict(el, {
         cap: App.capture(o.key()), fsLabel: F.label(o.step || o.key()).split(' · ')[0],
         onUse: () => next(o.step || o.key()),
-        onRetake: () => { App.drop(o.key()); App.go(o.id); },
+        onRetake: () => { App.drop(o.key()); App.go(o.id + '?ready=1'); },
         onSkip: () => { App.drop(o.key()); next(o.step || o.key()); },
       }),
     });
@@ -48,15 +48,15 @@
   /* ---------- video item: modal → record (3-2-1, timer) → recorded panel ----------
      o = { id, node, title, stage, key, modal: {title, pic, pan, vo}, vo, during, badge, badgeOn, fallback, chips, ask, min } */
   U.videoStep = function (o) {
-    const modal = () => (!st.seen[o.id] ? o.modal : null);
+    const modal = () => (!App.ready() ? o.modal : null);
     App.screen({
       id: o.id, node: o.node, title: o.title, orientation: 'landscape', className: 'cam vid',
       vo: () => (modal() ? o.modal.vo : o.vo),
-      render: () => U.cam({ items: list(o.stage), cur: o.key, shutter: 'video', railCls: 'dark', badge: o.badge })
+      render: () => U.cam({ items: list(o.stage), cur: o.key, shutter: 'video', railCls: 'dark', badge: o.badge, min: o.min })
         + (modal() ? U.lmodal({ title: o.modal.title, pic: o.modal.pic, pan: o.modal.pan, foot: '<button class="btn full" data-action="got-it">Got it</button>' }) : ''),
       mount: (el) => U.mountCam(el, {
         fallback: o.fallback,
-        onAction: (act) => { if (act === 'got-it') { st.seen[o.id] = true; el.querySelector('.ov').remove(); App.VO.speak(o.vo); } },
+        onAction: (act) => { if (act === 'got-it') { App.markReady(); el.querySelector('.ov').remove(); App.VO.speak(o.vo); } },
         video: {
           min: o.min || 10, during: o.during, badgeOn: o.badgeOn,
           onDone: (cap) => { cap.poster = cap.poster || U.thumb(o.fallback); App.save(o.key, cap); App.go(o.id + '-ok'); },
@@ -70,7 +70,7 @@
       mount: (el) => U.mountVerdict(el, {
         cap: App.capture(o.key), fsLabel: o.label,
         onUse: () => next(o.key),
-        onRetake: () => { App.drop(o.key); App.go(o.id); },
+        onRetake: () => { App.drop(o.key); App.go(o.id + '?ready=1'); },
       }),
     });
   };

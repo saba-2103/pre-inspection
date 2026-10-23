@@ -1,6 +1,5 @@
 /* V2 · Review & submit (portrait) — values from Figma 669:30753 §7 */
-.s3-review .pg-body { flex: 1 0 auto; }
-.s3-review .abar { position: sticky; bottom: 0; background: linear-gradient(180deg, rgba(244,248,254,0), var(--page) 18px); padding-top: 18px; z-index: 4; }
+.s3-review .abar { background: var(--page); }
 .uprow { background: #fff; border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; display: flex; gap: 10px; align-items: center; }
 .uprow > img { width: 20px; height: 20px; }
 .uprow .ut { flex: 1; display: flex; flex-direction: column; gap: 6px; }
@@ -74,6 +73,7 @@
 .vn .vr span { font: 500 13px/normal var(--ff); color: var(--err-stronger); }
 .vn .vw { display: flex; gap: 12px; align-items: center; }
 .wave { flex: 1; height: 32px; display: flex; gap: 4px; align-items: center; overflow: hidden; }
+.vn.done .wave { cursor: pointer; touch-action: none; }
 .wave i { width: 3px; flex-shrink: 0; border-radius: 2px; background: var(--line-muted); transition: height .15s, background .15s; }
 .wave.red i { background: var(--err); }
 .wave i.on { background: var(--brand); }
@@ -98,7 +98,7 @@
 .sb-s { font: 400 14px/1.4 var(--ff); color: var(--body); text-align: center; }
 
 /* success (669:32288) */
-.ok-body { flex: 1 0 auto; display: flex; flex-direction: column; justify-content: space-between; gap: 32px; padding: 20px 20px 0; }
+.ok-body { flex: 1 1 0; min-height: 0; overflow-y: auto; scrollbar-width: none; display: flex; flex-direction: column; justify-content: space-between; gap: 32px; padding: 20px 20px 0; }
 .ok-ill { flex: 1 0 0; min-height: 160px; display: flex; justify-content: center; }
 .ok-ill img { height: 100%; max-width: 100%; aspect-ratio: 1536/1024; object-fit: contain; }
 .ok-card { background: var(--subtle); border-radius: 20px; padding: 32px 16px 16px; display: flex; flex-direction: column; align-items: center; gap: 16px; box-shadow: 0 87px 52px rgba(0,0,0,.1); }
